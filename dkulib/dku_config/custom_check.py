@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -227,3 +228,11 @@ class CustomCheck:
             bool: Whether the check has succeed
         """
         return self.cond
+
+    def _match(self, value) -> bool:
+        """Checks whether "cond" matches the regex provided in "op" attribute
+
+        Returns:
+            bool: Whether the check has succeed
+        """
+        return not not re.match(self.op, value)
