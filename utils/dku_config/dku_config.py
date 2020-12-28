@@ -1,30 +1,81 @@
 from .dss_parameter import DSSParameter
+from collections.abc import MutableMapping
+from typing import Any
 
 
-class DkuConfig(object):
-    def __init__(self, config=None):
-        if not config:
-            config = {}
-        self._load_param(config)
+class DkuConfig(MutableMapping):
+    """Mapping structure containing DSSParameter objects. It behaves as a dict with the following differences:
+        - You can access elements with a dot structure (Example: dku_config.param1 or dku_config["param1"])
+        - You can set an element with a dot structure (Example: dku_config.param1 = 123)
+        - All objects stored are converted in DSSParameter
+        - Accessing an element returns the value of the object DSSParameter
 
-    def _load_param(self, config):
-        self.config = config
+    Attributes:
+        config(dict): Dict storing the DSSParameters
+    """
+    def __init__(self, **kwargs):
+        """Initialization method for the DkuConfig class
 
-    def add_param(self, name, **dss_param_kwargs):
-        setattr(self, name, DSSParameter(name=name, **dss_param_kwargs))
+        Args:
+            **kwargs: DSSParameters. Each key will be set as the parameter name and the values must be of type
+                dict. These dicts must contain at least an attribute "value". For other attributes, see
+                DSSParameter help.
+        """
+        object.__setattr__(self, 'config', {})
+        if kwargs:
+            for k, v in kwargs.items():
+                if 'value' not in v:
+                    raise ValueError('Each init kwargs must have a "value" field.')
+                val = v.pop('value')
+                self.add_param(name=k, value=val, **v)
 
-    def get(self, key, default=None):
-        return getattr(self, str(key), default)
+    def add_param(self, name: str, value: Any, **kwargs):
+        """Add a new DSSParameter to the config
 
-    def __getattribute__(self, item):
-        attr = object.__getattribute__(self, item)
-        return attr.value if isinstance(attr, DSSParameter) else attr
+        Args:
+            name(str): The name of the parameter
+            value(anytype): The value of the parameter
+            **kwargs: Other arguments. See DSSParameter help.
+        """
+        self.config[name] = DSSParameter(name=name, value=value, **kwargs)
+
+    def get_param(self, name: str) -> DSSParameter:
+        """Returns the DSSParameter of given name
+
+        Args:
+            name(str): Name of object to return
+
+        Returns:
+            DSSParameter: Parameter of given name
+        """
+        return self.config.get(name)
+
+    def __delitem__(self, item):
+        del self.config[item]
+
+    def __getattr__(self, name):
+        return self[name]
+
+    def __setattr__(self, key, value):
+        self[key] = value
 
     def __getitem__(self, item):
-        it = self.get(item)
-        if not it:
+        if item in self.config:
+            return self.config.get(item).value
+        else:
             raise KeyError(item)
-        return self.get(item)
 
-    def __contains__(self, item):
-        return not not self.get(item)
+    def __setitem__(self, key, value):
+        self.add_param(name=key, value=value)
+
+    def __iter__(self):
+        return iter(self.config)
+
+    def __len__(self):
+        return len(self.config)
+
+    def __repr__(self):
+        return self.config.__repr__()
+
+    def __str__(self):
+        return self.config.__str__()

@@ -1,3 +1,5 @@
+dirs = dku_config # Add here new libs separated by a whitespace if needed
+
 test-one:
 	@echo "[START] Running unit tests on ${f}..."
 	@( \
@@ -14,9 +16,9 @@ test-one:
 	@echo "[SUCCESS] Running unit tests: Done!"
 
 
-test-all: ./utils/*
+test-all:
 	@echo "[START] Running unit tests on all..."
-	for file in $^ ; do \
+	for file in $(dirs) ; do \
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
