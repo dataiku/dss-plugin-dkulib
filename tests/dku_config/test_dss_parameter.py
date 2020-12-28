@@ -1,7 +1,6 @@
 import pytest
-import numpy as np
-from utils.dku_config.dss_parameter import DSSParameter, DSSParameterError
-from utils.dku_config.custom_check import CustomCheckError
+from dkulib.dku_config.dss_parameter import DSSParameter, DSSParameterError
+from dkulib.dku_config.custom_check import CustomCheckError
 import logging
 
 LOGGER = logging.getLogger(__name__)
