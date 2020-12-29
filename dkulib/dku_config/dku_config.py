@@ -66,7 +66,7 @@ class DkuConfig(MutableMapping):
         Returns:
             Any: The value matching the given name
         """
-        return self.local_vars.get('{}__{}'.format(self.local_prefix, var_name), None)
+        return self.local_vars.get('{}{}'.format(self.local_prefix, var_name), None)
 
     def __delitem__(self, item):
         del self.config[item]

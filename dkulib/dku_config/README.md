@@ -6,6 +6,10 @@ This lib can be used to validate parameters in a custom form. We know that front
 and does not work in some cases in DSS (Webapps for example). Thus, you can create an object DkuConfig that
 behavies as a dict, and add parameters with checks.
 
+The DkuConfig object also supports local vars. If you want to use a Dku App, the only way to get user settings is
+to use local vars. A good practice is to prefix these vars by the name of your plugin like that : 
+`MY_AWESOME_PLUGIN__param1`. That way, there won't be any conflicts if another plugin uses local vars.
+
 ## Examples
 
 Let's say you have built a custom form containing the following fields :
@@ -20,10 +24,14 @@ message. You can then build a DkuConfig object.
 
 ```python
 from dkulib.dku_config.dku_config import DkuConfig
+import dataiku
 from dataiku.customrecipe import get_recipe_config
 
 config = get_recipe_config()
-dku_config = DkuConfig()
+dku_config = DkuConfig(
+    local_vars=dataiku.Project().get_variables()['local'],
+    local_prefix="MY_AWESOME_PLUGIN__"
+)
 
 dku_config.add_param(
     name="first_name",
