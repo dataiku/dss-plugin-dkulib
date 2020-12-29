@@ -1,4 +1,4 @@
-from dkulib.dku_config.custom_check import CustomCheck, CustomCheckError
+from .custom_check import CustomCheck, CustomCheckError
 from typing import Any, List
 
 import logging
@@ -16,7 +16,7 @@ class DSSParameter:
 
     Attributes:
         name(str): Name of the parameter
-        value(anytype): Value of the parameter
+        value(Any): Value of the parameter
         checks(list[dict], optional): Checks to run on provided value
         required(bool, optional): Whether the value can be None
     """
@@ -25,7 +25,7 @@ class DSSParameter:
 
         Args:
             name(str): Name of the parameter
-            value(anytype): Value of the parameter
+            value(Any): Value of the parameter
             checks(list[dict], optional): Checks to run on provided value
             required(bool, optional): Whether the value can be None
         """

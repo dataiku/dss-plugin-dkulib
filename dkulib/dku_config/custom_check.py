@@ -31,7 +31,7 @@ class CustomCheck:
 
     Attributes:
         type (str): Type of the CustomCheck. Must have a related method having "_" before type name
-        op (anytype, optional): Operator to compare the value to. Unnecessary for som checks
+        op (Any, optional): Operator to compare the value to. Unnecessary for som checks
         cond (bool, optional): Only necessary for type "custom". Must be true for check to pass
         err_msg (str, optional): Custom message to display if check fails. Default is a generic message
     """
@@ -43,7 +43,7 @@ class CustomCheck:
 
         Args:
             type (str): Type of the CustomCheck. Must have a related method having "_" before type name
-            op (anytype, optional): Operator to compare the value to. Unnecessary for som checks
+            op (Any, optional): Operator to compare the value to. Unnecessary for som checks
             cond (bool, optional): Only necessary for type "custom". Must be true for check to pass
             err_msg (str, optional): Custom message to display if check fails. Default is a generic message
         """
@@ -59,7 +59,7 @@ class CustomCheck:
         """Runs the check on a value
 
         Args:
-            value(anytype, optional): The value to run the check on. Default is None
+            value(Any, optional): The value to run the check on. Default is None
         """
         func_name = '_{}'.format(self.type)
         result = getattr(self, func_name)(value)
@@ -70,7 +70,7 @@ class CustomCheck:
 
         Args:
             result(bool): True if check has passed else False
-            value(anytype): The value on which the test has been ran
+            value(Any): The value on which the test has been ran
 
         Raises:
             CustomCheckError if check fails
@@ -92,7 +92,7 @@ class CustomCheck:
         """Format the error message with the value that has failed the test
 
         Args:
-            value(anytype): Failure value
+            value(Any): Failure value
 
         Returns:
             str: Error messages formatted
@@ -104,7 +104,7 @@ class CustomCheck:
         """Checks whether the value is None
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -115,7 +115,7 @@ class CustomCheck:
         """Checks whether the value is in the iterable given in "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -126,7 +126,7 @@ class CustomCheck:
         """Checks whether the value is not in the iterable given in "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -137,7 +137,7 @@ class CustomCheck:
         """Checks whether the value is equal to "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -148,7 +148,7 @@ class CustomCheck:
         """Checks whether the value is superior to "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -159,7 +159,7 @@ class CustomCheck:
         """Checks whether the value is inferior to "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -170,7 +170,7 @@ class CustomCheck:
         """Checks whether the value is superior or equal to "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -181,7 +181,7 @@ class CustomCheck:
         """Checks whether the value is inferior or equal to "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -192,7 +192,7 @@ class CustomCheck:
         """Checks whether the value is between the first and second member of "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -203,7 +203,7 @@ class CustomCheck:
         """Checks whether the value is strictly between the first and second member of "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
@@ -214,7 +214,7 @@ class CustomCheck:
         """Checks whether the value has the type given in "op" attribute
 
         Args:
-            value(anytype): Value to test
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed

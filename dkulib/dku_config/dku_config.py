@@ -13,15 +13,20 @@ class DkuConfig(MutableMapping):
     Attributes:
         config(dict): Dict storing the DSSParameters
     """
-    def __init__(self, **kwargs):
+    def __init__(self, local_vars=None, local_prefix='', **kwargs):
         """Initialization method for the DkuConfig class
 
         Args:
+            local_vars(dict, optional): Dict containing vars fetched from project local variables. Default is {}
+            local_prefix(str, optional): If project vars prefixed, write the prefix here, it will be added when
+                searching for the var
             **kwargs: DSSParameters. Each key will be set as the parameter name and the values must be of type
                 dict. These dicts must contain at least an attribute "value". For other attributes, see
                 DSSParameter help.
         """
         object.__setattr__(self, 'config', {})
+        object.__setattr__(self, 'local_vars', local_vars or {})
+        object.__setattr__(self, 'local_prefix', local_prefix)
         if kwargs:
             for k, v in kwargs.items():
                 if 'value' not in v:
@@ -29,14 +34,16 @@ class DkuConfig(MutableMapping):
                 val = v.pop('value')
                 self.add_param(name=k, value=val, **v)
 
-    def add_param(self, name: str, value: Any, **kwargs):
+    def add_param(self, name: str, value: Any = None, **kwargs):
         """Add a new DSSParameter to the config
 
         Args:
             name(str): The name of the parameter
-            value(anytype): The value of the parameter
+            value(Any, optional): The value of the parameter. If empty, the parameter must be in local vars
             **kwargs: Other arguments. See DSSParameter help.
         """
+        if self.local_vars:
+            value = value or self._get_local_var(name)
         self.config[name] = DSSParameter(name=name, value=value, **kwargs)
 
     def get_param(self, name: str) -> DSSParameter:
@@ -49,6 +56,17 @@ class DkuConfig(MutableMapping):
             DSSParameter: Parameter of given name
         """
         return self.config.get(name)
+
+    def _get_local_var(self, var_name: str) -> Any:
+        """Returns the value of the local variable related to var_name.
+
+        Args:
+            var_name(str): The variable to fetch from local_vars. It will be prefixed by the attribute "local_prefix"
+
+        Returns:
+            Any: The value matching the given name
+        """
+        return self.local_vars.get('{}__{}'.format(self.local_prefix, var_name), None)
 
     def __delitem__(self, item):
         del self.config[item]

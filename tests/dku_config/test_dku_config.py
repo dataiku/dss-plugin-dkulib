@@ -82,6 +82,34 @@ class TestDkuConfig:
         assert dku_config.param3 == 'abc'
         assert type(dku_config['param1']) == int
 
+    def test_local_vars(self):
+        dku_config = DkuConfig(
+            local_vars={
+                "MY_PLUGIN__param1": "value1",
+                "MY_PLUGIN__param2": 2,
+                "MY_PLUGIN__param3": [1, 2, 3, 4],
+            },
+            local_prefix="MY_PLUGIN"
+        )
+        dku_config.add_param(
+            name="param1"
+        )
+        dku_config.add_param(
+            name="param2"
+        )
+        dku_config.add_param(
+            name="param3",
+            value=[4, 5, 6]
+        )
+        param1 = dku_config.param1
+        param2 = dku_config["param2"]
+        param3 = dku_config["param3"]
+        assert param1 == "value1"
+        assert param2 == 2
+        assert param3 == [4, 5, 6]
+
+
+
 
 
 
