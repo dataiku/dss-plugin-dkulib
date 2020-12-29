@@ -79,7 +79,7 @@ Don't hesitate to check these plugins using the library for more examples :
 ## Version
 
 - Version: 0.1
-- State: <span style="color:green">Stable</span>
+- State: <span style="color:green">Supported</span>
 
 ## Credit
 
