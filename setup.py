@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="dkulib",
     version="0.0.1",
-    description='Lib to be use to develop plugins',
+    description='Library for plugin development',
     author="Dataiku (Henri Chabert)",
     url='https://github.com/dataiku/dss-plugin-dkulib.git',  # Provide either the link to your github or to your website
     packages=find_packages(),
