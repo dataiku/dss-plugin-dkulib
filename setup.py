@@ -8,7 +8,7 @@ setup(
   author = 'Henri Chabert',                   # Type in your name
   author_email = 'henri.chabert@dataiku.com',      # Type in your E-Mail
   url = 'https://github.com/dataiku/dss-plugin-dkulib.git',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/dataiku/dss-plugin-dkulib/archive/main.zip',    # I explain this later on
+  download_url = 'https://github.com/dataiku/dss-plugin-dkulib/archive/v0.1.tar.gz',    # I explain this later on
   keywords = ['UTILS'],   # Keywords that define your package best
   install_requires=[],
   classifiers=[
