@@ -1,1 +1,1 @@
-from dkulib import dku_config
+from dkulib.dku_config import DkuConfig, DSSParameter, CustomCheck
