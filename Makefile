@@ -8,22 +8,16 @@ test-one:
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
 		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
+		export PYTHONPATH="$(PYTHONPATH):$(PWD)"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	)
-	@echo "[SUCCESS] Running unit tests: Done!"
+	@echo "[SUCCESS] Running unit tests on ${module}: Done!"
 
 
 test-all:
-	@echo "[START] Running unit tests on all modules..."
-	for module in $(modules) ; do \
-		python3 -m venv env/; \
-		source env/bin/activate; \
-		pip3 install --upgrade pip; \
-		pip3 install --no-cache-dir -r dkulib/$${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
-		pytest tests/${module} --alluredir=tests/allure_report; \
-		deactivate; \
+	@echo "[START] Running all unit tests..."
+	@for module in $(modules) ; do \
+		$(MAKE) module=$${module} test-one; \
 	done
-	@echo "[SUCCESS] Running unit tests: Done!"
+	@echo "[SUCCESS] Running all unit tests: Done!"
