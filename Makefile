@@ -8,7 +8,7 @@ test-one:
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
 		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib; \
+		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	)
@@ -22,7 +22,7 @@ test-all:
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
 		pip3 install --no-cache-dir -r dkulib/$${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib; \
+		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	done
