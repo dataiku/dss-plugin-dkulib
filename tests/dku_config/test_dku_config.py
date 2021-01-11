@@ -89,7 +89,7 @@ class TestDkuConfig:
                 "MY_PLUGIN__param2": 2,
                 "MY_PLUGIN__param3": [1, 2, 3, 4],
             },
-            local_prefix="MY_PLUGIN"
+            local_prefix="MY_PLUGIN__"
         )
         dku_config.add_param(
             name="param1"
