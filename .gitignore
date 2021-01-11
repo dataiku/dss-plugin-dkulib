@@ -53,6 +53,7 @@ unit.xml
 .hypothesis/
 .pytest_cache/
 cover/
+tests/allure_report/
 
 # Translations
 *.mo
