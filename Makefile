@@ -1,29 +1,29 @@
-dirs = dku_config # Add here new libs separated by a whitespace if needed
+modules = dku_config # Add here new libs separated by a whitespace if needed
 
 test-one:
-	@echo "[START] Running unit tests on ${f}..."
+	@echo "[START] Running unit tests on ${module}..."
 	@( \
 		rm -rf env; \
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip install --no-cache-dir -r tests/${f}/requirements.txt; \
-		pip install --no-cache-dir -r dkulib/${f}/requirements.txt; \
-		pytest -o junit_family=xunit2 --junitxml=unit.xml tests/${f} || true; \
+		pip install --no-cache-dir -r tests/${module}/requirements.txt; \
+		pip install --no-cache-dir -r dkulib/${module}/requirements.txt; \
+		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	)
 	@echo "[SUCCESS] Running unit tests: Done!"
 
 
 test-all:
-	@echo "[START] Running unit tests on all..."
-	for file in $(dirs) ; do \
+	@echo "[START] Running unit tests on all modules..."
+	for module in $(modules) ; do \
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip install --no-cache-dir -r tests/$${file}/requirements.txt; \
-		pip install --no-cache-dir -r dkulib/$${file}/requirements.txt; \
-		pytest -o junit_family=xunit2 --junitxml=unit.xml tests/${file} || true; \
+		pip install --no-cache-dir -r tests/$${module}/requirements.txt; \
+		pip install --no-cache-dir -r dkulib/$${module}/requirements.txt; \
+		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	done
 	@echo "[SUCCESS] Running unit tests: Done!"
