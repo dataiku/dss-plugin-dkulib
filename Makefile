@@ -1,4 +1,4 @@
-modules = dku_config # Add here new libs separated by a whitespace if needed
+modules = dku_config nlp # Add here new libs separated by a whitespace if needed
 
 test-one:
 	@echo "[START] Running unit tests on ${module}..."
@@ -8,22 +8,18 @@ test-one:
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
 		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
+		export PYTHONPATH="$(PYTHONPATH):$(PWD)"; \
+		export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
+		export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	)
-	@echo "[SUCCESS] Running unit tests: Done!"
+	@echo "[SUCCESS] Running unit tests on ${module}: Done!"
 
 
 test-all:
-	@echo "[START] Running unit tests on all modules..."
-	for module in $(modules) ; do \
-		python3 -m venv env/; \
-		source env/bin/activate; \
-		pip3 install --upgrade pip; \
-		pip3 install --no-cache-dir -r dkulib/$${module}/requirements.txt -r tests/requirements.txt; \
-		export PYTHONPATH="$(PYTHONPATH):$(PWD)/dkulib"; \
-		pytest tests/${module} --alluredir=tests/allure_report; \
-		deactivate; \
+	@echo "[START] Running all unit tests..."
+	@for module in $(modules) ; do \
+		$(MAKE) module=$${module} test-one; \
 	done
-	@echo "[SUCCESS] Running unit tests: Done!"
+	@echo "[SUCCESS] Running all unit tests: Done!"
