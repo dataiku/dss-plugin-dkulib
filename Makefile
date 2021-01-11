@@ -7,8 +7,7 @@ test-one:
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip install --no-cache-dir -r tests/${module}/requirements.txt; \
-		pip install --no-cache-dir -r dkulib/${module}/requirements.txt; \
+		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt tests/requirements.txt; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	)
@@ -21,8 +20,7 @@ test-all:
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip install --no-cache-dir -r tests/$${module}/requirements.txt; \
-		pip install --no-cache-dir -r dkulib/$${module}/requirements.txt; \
+		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt tests/requirements.txt; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
 		deactivate; \
 	done
