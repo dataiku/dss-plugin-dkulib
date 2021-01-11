@@ -1,6 +1,6 @@
 import pytest
-from dkulib.dku_config.dku_config import DkuConfig
-from dkulib.dku_config.dss_parameter import DSSParameterError
+from dku_config.dku_config import DkuConfig
+from dku_config.dss_parameter import DSSParameterError
 
 
 class TestDkuConfig:
@@ -107,9 +107,3 @@ class TestDkuConfig:
         assert param1 == "value1"
         assert param2 == 2
         assert param3 == [4, 5, 6]
-
-
-
-
-
-

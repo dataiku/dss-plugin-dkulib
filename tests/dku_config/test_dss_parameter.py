@@ -1,6 +1,6 @@
 import pytest
-from dkulib.dku_config.dss_parameter import DSSParameter, DSSParameterError
-from dkulib.dku_config.custom_check import CustomCheckError
+from dku_config.dss_parameter import DSSParameter, DSSParameterError
+from dku_config.custom_check import CustomCheckError
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class TestDSSParameter:
 
     def test_success(self, caplog):
         caplog.set_level(logging.INFO)
-        dss_parameter = DSSParameter(
+        _ = DSSParameter(
             name='test',
             value=3,
             checks=[{
@@ -60,4 +60,3 @@ class TestDSSParameter:
                 required=True
             )
             assert 'Error for parameter' in err
-

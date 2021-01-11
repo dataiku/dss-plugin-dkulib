@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from dkulib.dku_config.custom_check import CustomCheck, CustomCheckError
+from dku_config.custom_check import CustomCheck, CustomCheckError
 
 
 class TestCustomCheck:
@@ -184,9 +184,8 @@ class TestCustomCheck:
     def test_match(self):
         custom_check_match = CustomCheck(
             type='match',
-            op='^(?:(?:\+|00)33[\s.-]{0,3}(?:\(0\)[\s.-]{0,3})?|0)[1-9](?:(?:[\s.-]?\d{2}){4}|\d{2}(?:[\s.-]?\d{3}){2})$'
+            op=r"^(?:(?:\+|00)33[\s.-]{0,3}(?:\(0\)[\s.-]{0,3})?|0)[1-9](?:(?:[\s.-]?\d{2}){4}|\d{2}(?:[\s.-]?\d{3}){2})$"
         )
         assert custom_check_match.run('0234678956') is None
         with pytest.raises(CustomCheckError):
             _ = custom_check_match.run('abc')
-
