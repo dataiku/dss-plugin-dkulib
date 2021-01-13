@@ -143,9 +143,9 @@ class SpellChecker:
         start = perf_counter()
         logging.info(f"Loading spellchecker for language '{language}'...")
         symspell_checker = SymSpell(max_dictionary_edit_distance=self.edit_distance)
-        frequency_dict_path = self.dictionary_folder_path + "/" + language + ".txt"
+        frequency_dict_path = os.path.join(self.dictionary_folder_path, "{}.txt".format(language))
         symspell_checker.load_dictionary(frequency_dict_path, term_index=0, count_index=1, encoding="utf-8")
-        if len(self.custom_vocabulary_set) != 0:
+        if len(self.custom_vocabulary_set):
             for word in self.custom_vocabulary_set:
                 symspell_checker.create_dictionary_entry(key=word, count=1)
         logging.info(f"Loading spellchecker for language '{language}': done in {perf_counter() - start:.2f} seconds")
