@@ -215,7 +215,6 @@ class TextCleaner:
         self._prepare_df_for_cleaning(df, text_column, language_column, language)
         start = perf_counter()
         logging.info(f"Cleaning {len(df.index)} document(s)...")
-        output = [{}] * len(df.index)
         doc_iterator = (doc for doc in df[self.tokenizer.tokenized_column])
         with ThreadPoolExecutor(max_workers=self.DEFAULT_NUM_THREADS) as executor:
             output = list(executor.map(lambda x: self.clean_document(x), doc_iterator))
