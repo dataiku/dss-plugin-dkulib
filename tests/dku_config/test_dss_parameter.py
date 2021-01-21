@@ -36,7 +36,7 @@ class TestDSSParameter:
 
     def test_success(self, caplog):
         caplog.set_level(logging.INFO)
-        dss_parameter = DSSParameter(
+        _ = DSSParameter(
             name='test',
             value=3,
             checks=[{
@@ -60,4 +60,3 @@ class TestDSSParameter:
                 required=True
             )
             assert 'Error for parameter' in err
-
