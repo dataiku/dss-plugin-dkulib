@@ -14,6 +14,7 @@ import spacy
 from spacy.language import Language
 from spacy.tokens import Doc, Token
 from spacy.vocab import Vocab
+from spacymoji import Emoji
 from emoji import UNICODE_EMOJI
 from fastcore.utils import store_attr
 
@@ -175,6 +176,10 @@ class MultilingualTokenizer:
                 nlp.tokenizer.prefix_search = spacy.util.compile_prefix_regex(_prefixes).search
         if self.stopwords_folder_path and language in SUPPORTED_LANGUAGES_SPACY:
             self._customize_stopwords(nlp, language)
+        try:
+            nlp.add_pipe(Emoji(nlp), first=True)
+        except (AttributeError, ValueError) as e:
+            logging.warning(f"Spacymoji not available for language '{language}' because of error: '{e}'")
         logging.info(f"Loading tokenizer for language '{language}': done in {perf_counter() - start:.2f} seconds")
         return nlp
 
