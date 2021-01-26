@@ -385,9 +385,10 @@ class SpellChecker:
 
         """
         df.drop(self.tokenizer.tokenized_column, axis=1, inplace=True)
-        corrected_text_column = list(self.output_column_descriptions.keys())[0]
-        spelling_mistakes_column = list(self.output_column_descriptions.keys())[2]
-        misspelling_count_column = list(self.output_column_descriptions.keys())[3]
+        output_columns = list(self.output_column_descriptions.keys())
+        corrected_text_column = output_columns[0]
+        spelling_mistakes_column = output_columns[2]
+        misspelling_count_column = output_columns[3]
         df[spelling_mistakes_column] = df[spelling_mistakes_column].apply(clean_empty_list)
         df.loc[df[corrected_text_column] == "", misspelling_count_column] = ""
 
