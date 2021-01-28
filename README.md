@@ -4,8 +4,8 @@ This repo contains reusable code to help develop DSS plugins.
 
 ## Included libs
 
-- [dku_config](https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/dku_config) (Last update: 2021-28-01): Gives the ability to check forms parameters in backend and to display understandable messages if fails.
-- [nlp](https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/nlp): Detect languages, tokenize, correct misspellings and clean text data.
+- [dku_config](https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/dku_config): Gives the ability to check forms parameters in backend and to display understandable messages if fails
+- [nlp](https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/nlp): Detect languages, tokenize, correct misspellings and clean text data
 
 ## License
 
