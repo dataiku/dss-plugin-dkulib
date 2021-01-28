@@ -109,7 +109,7 @@ class CustomCheck:
         Returns:
             bool: Whether the check has succeed
         """
-        return value is not None
+        return value is not None and value != []
 
     def _in(self, value: Any) -> bool:
         """Checks whether the value is in the iterable given in "op" attribute
