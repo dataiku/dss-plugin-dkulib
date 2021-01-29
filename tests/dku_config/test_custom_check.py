@@ -19,7 +19,8 @@ class TestCustomCheck:
             type='exists'
         )
         assert custom_check.run('test') is None
-        assert custom_check.run('') is None
+        with pytest.raises(CustomCheckError):
+            _ = custom_check.run('')
         with pytest.raises(CustomCheckError):
             _ = custom_check.run([])
         with pytest.raises(CustomCheckError):
