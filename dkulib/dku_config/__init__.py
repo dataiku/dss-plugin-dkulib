@@ -1,9 +1,9 @@
 ########################################################
-# ------------- dkulib.dku_config: 0.1.1 ----------------
+# ------------- dkulib.dku_config: 0.1.2 ----------------
 
 # For more information, see https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/dku_config
-# Library version: 0.1.1
-# Last update: 2020-12-29
+# Library version: 0.1.2
+# Last update: 2021-01-28
 # Author: Dataiku (Henri Chabert)
 #########################################################
 
