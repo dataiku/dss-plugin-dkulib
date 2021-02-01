@@ -56,7 +56,22 @@ class TestDSSParameter:
                 checks=[{
                     "type": "inf",
                     "op": 2
+                }]
+            )
+            assert 'Error for parameter' in err
+
+    def test_double_failure(self, caplog):
+        caplog.set_level(logging.INFO)
+        with pytest.raises(DSSParameterError) as err:
+            _ = DSSParameter(
+                name='test',
+                value=3,
+                checks=[{
+                    "type": "inf",
+                    "op": 2
                 }],
                 required=True
             )
             assert 'Error for parameter' in err
+            assert 'required' in err
+            assert 'inferior' not in err

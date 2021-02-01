@@ -35,49 +35,46 @@ class DSSParameter:
         self.value = value
         self.checks = [CustomCheck(**check) for check in checks]
         if required:
-            self.checks.append(CustomCheck(type='exists'))
+            self.checks.insert(0, CustomCheck(type='exists'))
         self.run_checks()
 
     def run_checks(self):
         """Runs all checks provided for this parameter
         """
-        errors = []
         for check in self.checks:
             try:
                 check.run(self.value)
             except CustomCheckError as err:
-                errors.append(err)
-        if errors:
-            self.handle_failure(errors)
+                self.handle_failure(err)
         self.handle_success()
 
-    def handle_failure(self, errors: List[CustomCheckError]):
+    def handle_failure(self, error: CustomCheckError):
         """Is called when at least one test fails. It will raise an Exception with understandable text
 
         Args:
-            errors(list[CustomCheckError]: Errors met when running checks
+            error(CustomCheckError: Errors met when running checks
 
         Raises:
             DSSParameterError: Raises if at least on check fails
         """
-        raise DSSParameterError(self.format_failure_message(errors))
+        raise DSSParameterError(self.format_failure_message(error))
 
-    def format_failure_message(self, errors: List[CustomCheckError]) -> str:
+    def format_failure_message(self, error: CustomCheckError) -> str:
         """Format failure text
 
         Args:
-            errors(list[CustomCheckError]: Errors met when running checks
+            error(CustomCheckError: Error met when running check
 
         Returns:
             str: Formatted error message
         """
         return """
         Error for parameter \"{name}\" :
-        {errors}
-        Please check your settings and fix errors.
+        {error}
+        Please check your settings and fix the error.
         """.format(
             name=self.name,
-            errors='\n'.join(["\t- {}".format(e) for e in errors])
+            error=error
         )
 
     def handle_success(self):
