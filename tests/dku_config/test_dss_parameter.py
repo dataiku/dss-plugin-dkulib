@@ -58,7 +58,7 @@ class TestDSSParameter:
                     "op": 2
                 }]
             )
-            assert 'Error for parameter' in err
+        assert 'Error for parameter' in str(err.value)
 
     def test_double_failure(self, caplog):
         caplog.set_level(logging.INFO)
@@ -72,6 +72,7 @@ class TestDSSParameter:
                 }],
                 required=True
             )
-            assert 'Error for parameter' in err
-            assert 'required' in err
-            assert 'inferior' not in err
+        error_message = str(err.value)
+        assert 'Error for parameter' in error_message
+        assert 'required' not in error_message
+        assert 'less' in error_message
