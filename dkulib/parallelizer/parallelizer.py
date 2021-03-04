@@ -9,12 +9,14 @@ from typing import Callable, AnyStr, List, Tuple, NamedTuple, Dict, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from time import perf_counter
+from collections import OrderedDict, namedtuple
+from enum import Enum
 
 import pandas as pd
 from more_itertools import chunked, flatten
 from tqdm.auto import tqdm as tqdm_auto
 
-from dkulib.io_utils.plugin_io_utils import ErrorHandling, build_unique_column_names
+from dkulib.io_utils.plugin_io_utils import generate_unique
 
 
 # ==============================================================================
@@ -26,6 +28,23 @@ DEFAULT_BATCH_SIZE = 10
 DEFAULT_BATCH_SUPPORT = False
 DEFAULT_VERBOSE = False
 
+API_COLUMN_NAMES_DESCRIPTION_DICT = OrderedDict(
+    [
+        ("response", "Raw response from the API in JSON format"),
+        ("error_message", "Error message from the API"),
+        ("error_type", "Error type or code from the API"),
+        ("error_raw", "Raw error from the API"),
+    ]
+)
+"""Default dictionary of API column names (key) and their descriptions (value)"""
+
+
+class ErrorHandling(Enum):
+    """Enum class to identify how to handle API errors"""
+
+    LOG = "Log"
+    FAIL = "Fail"
+
 
 # ==============================================================================
 # CLASS AND FUNCTION DEFINITION
@@ -36,6 +55,15 @@ class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
 
     pass
+
+
+def build_unique_column_names(existing_names: List[AnyStr], column_prefix: AnyStr) -> NamedTuple:
+    """Return a named tuple with prefixed API column names and their descriptions"""
+    ApiColumnNameTuple = namedtuple("ApiColumnNameTuple", API_COLUMN_NAMES_DESCRIPTION_DICT.keys())
+    api_column_names = ApiColumnNameTuple(
+        *[generate_unique(column_name, existing_names, column_prefix) for column_name in ApiColumnNameTuple._fields]
+    )
+    return api_column_names
 
 
 def apply_function_to_row(
