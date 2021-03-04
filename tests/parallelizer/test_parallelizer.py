@@ -34,7 +34,7 @@ class APICaseEnum(Enum):
     }
     API_FAILURE = {
         "test_api_response": "",
-        "test_api_error_message": "None foo",
+        "test_api_error_message": "foo",
         "test_api_error_type": "google.api_core.exceptions.GoogleAPICallError",
     }
 
