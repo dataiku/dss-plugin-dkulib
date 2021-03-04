@@ -6,6 +6,7 @@
 import json
 from typing import AnyStr, Dict
 from enum import Enum
+from urllib.error import URLError
 
 import pandas as pd
 
@@ -16,7 +17,7 @@ from dkulib.parallelizer.parallelizer import parallelizer  # noqa
 # CONSTANT DEFINITION
 # ==============================================================================
 
-API_EXCEPTIONS = (OSError, ValueError)
+API_EXCEPTIONS = (URLError, ValueError)
 COLUMN_PREFIX = "test_api"
 INPUT_COLUMN = "test_case"
 
@@ -34,8 +35,8 @@ class APICaseEnum(Enum):
     }
     API_FAILURE = {
         "test_api_response": "",
-        "test_api_error_message": "foo",
-        "test_api_error_type": "google.api_core.exceptions.GoogleAPICallError",
+        "test_api_error_message": "<urlopen error foo>",
+        "test_api_error_type": "urllib.error.URLError",
     }
 
 
@@ -55,7 +56,7 @@ def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
         except ValueError as e:
             raise e
     elif test_case == APICaseEnum.API_FAILURE:
-        raise ValueError("foo")
+        raise URLError("foo")
     return json.dumps(response)
 
 
