@@ -12,7 +12,6 @@ test-one:
 		export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
 		export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
-		deactivate; \
 	)
 	@echo "[SUCCESS] Running unit tests on ${module}: Done!"
 
