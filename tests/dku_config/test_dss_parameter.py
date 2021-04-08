@@ -35,7 +35,7 @@ class TestDSSParameter:
             )
 
     def test_success(self, caplog):
-        caplog.set_level(logging.INFO)
+        caplog.set_level(logging.DEBUG)
         _ = DSSParameter(
             name='test',
             value=3,
