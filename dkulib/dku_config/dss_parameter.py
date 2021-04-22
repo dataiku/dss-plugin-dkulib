@@ -63,15 +63,14 @@ class DSSParameter:
         """Format failure text
 
         Args:
-            error(CustomCheckError: Error met when running check
+            error (CustomCheckError: Error met when running check
 
         Returns:
             str: Formatted error message
         """
         return """
-        Error for parameter \"{name}\" :
+        Validation error with parameter \"{name}\":
         {error}
-        Please check your settings and fix the error.
         """.format(
             name=self.name,
             error=error
