@@ -20,7 +20,7 @@ class DSSParameter:
         checks(list[dict], optional): Checks to run on provided value
         required(bool, optional): Whether the value can be None
     """
-    def __init__(self, name: str, value: Any, checks: List[dict] = None, required: bool = False):
+    def __init__(self, name: str, value: Any, checks: List[dict] = None, required: bool = False, cast_to: type = None, default: Any = None):
         """Initialization method for the DSSParameter class
 
         Args:
@@ -32,21 +32,30 @@ class DSSParameter:
         if checks is None:
             checks = []
         self.name = name
-        self.value = value
+        self.value = value if value is not None else default
+        value_exists = self.run_checks([CustomCheck(type='exists')], raise_error=required)
+        self.cast_to = cast_to
         self.checks = [CustomCheck(**check) for check in checks]
-        if required:
-            self.checks.insert(0, CustomCheck(type='exists'))
-        self.run_checks()
+        if value_exists:
+            if self.cast_to:
+                self.run_checks([CustomCheck(type='is_castable', op=cast_to)])
+                self.cast_value()
+            self.run_checks(self.checks)
 
-    def run_checks(self):
+    def cast_value(self):
+        self.value = self.cast_to(self.value) if self.cast_to else self.value
+
+    def run_checks(self, checks, raise_error=True):
         """Runs all checks provided for this parameter
         """
-        for check in self.checks:
+        for check in checks:
             try:
                 check.run(self.value)
             except CustomCheckError as err:
-                self.handle_failure(err)
-        self.handle_success()
+                if raise_error:
+                    self.handle_failure(err)
+                return False
+        return True
 
     def handle_failure(self, error: CustomCheckError):
         """Is called when at least one test fails. It will raise an Exception with understandable text

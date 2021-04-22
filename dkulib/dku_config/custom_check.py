@@ -16,7 +16,9 @@ DEFAULT_ERROR_MESSAGES = {
     'between': 'Should be between {op[0]} and {op[1]} inclusive (Currently {value}).',
     'between_strict': 'Should be between {op[0]} and {op[1]} exclusive (Currently {value}).',
     'is_type': 'Should be of type {op}.',
-    'custom': "There has been an unknown error."
+    'is_castable': 'You cannot cast {value} to the type {op}.',
+    'custom': "There has been an unknown error.",
+    'match': "Should match the following pattern: {op}."
 }
 
 
@@ -32,19 +34,16 @@ class CustomCheck:
     Attributes:
         type (str): Type of the CustomCheck. Must have a related method having "_" before type name
         op (Any, optional): Operator to compare the value to. Unnecessary for som checks
-        cond (bool, optional): Only necessary for type "custom". Must be true for check to pass
         err_msg (str, optional): Custom message to display if check fails. Default is a generic message
     """
     def __init__(self, type,
                  op: Any = None,
-                 cond: Any = bool,
                  err_msg: str = ''):
         """Initialization method for the CustomCheck class
 
         Args:
             type (str): Type of the CustomCheck. Must have a related method having "_" before type name
             op (Any, optional): Operator to compare the value to. Unnecessary for som checks
-            cond (bool, optional): Only necessary for type "custom". Must be true for check to pass
             err_msg (str, optional): Custom message to display if check fails. Default is a generic message
         """
         self.type = type
@@ -52,7 +51,6 @@ class CustomCheck:
         if not hasattr(self, func_name):
             raise CustomCheckError('Check of type {} does not exist.'.format(self.type))
         self.op = op
-        self.cond = cond
         self.err_msg = err_msg or self.get_default_err_msg()
 
     def run(self, value: Any = None):
@@ -222,16 +220,31 @@ class CustomCheck:
         """
         return isinstance(value, self.op)
 
-    def _custom(self, _) -> bool:
-        """Checks whether "cond" attribute is true or false
+    def _is_castable(self, value: Any) -> bool:
+        """Checks whether the value can be cast to the op type
+
+        Args:
+            value(Any): Value to test
 
         Returns:
             bool: Whether the check has succeed
         """
-        return self.cond
+        try:
+            _ = self.op(value)
+            return True
+        except TypeError:
+            return False
+
+    def _custom(self, _) -> bool:
+        """Checks whether "op" attribute is true or false
+
+        Returns:
+            bool: Whether the check has succeed
+        """
+        return self.op
 
     def _match(self, value) -> bool:
-        """Checks whether "cond" matches the regex provided in "op" attribute
+        """Checks whether "value" matches the regex provided in "op" attribute
 
         Returns:
             bool: Whether the check has succeed
