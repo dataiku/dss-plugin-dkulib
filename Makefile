@@ -1,4 +1,4 @@
-modules = dku_config nlp # Add here new libs separated by a whitespace if needed
+modules = dku_config nlp parallelizer # Add here new libs separated by a whitespace if needed
 
 test-one:
 	@echo "[START] Running unit tests on ${module}..."
