@@ -1,5 +1,9 @@
 modules = dku_config nlp # Add here new libs separated by a whitespace if needed
 
+nlp-setup:
+	export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
+	export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
+
 test-one:
 	@echo "[START] Running unit tests on ${module}..."
 	@( \
@@ -9,6 +13,7 @@ test-one:
 		pip3 install --upgrade pip; \
 		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
 		export PYTHONPATH="$(PYTHONPATH):$(PWD)"; \
+		$(MAKE) ${module}-setup; \
 		export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
 		export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
