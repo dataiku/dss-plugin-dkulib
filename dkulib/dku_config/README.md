@@ -86,7 +86,7 @@ Don't hesitate to check these plugins using the library for more examples :
 
 ## Version
 
-- Version: 0.1.3
+- Version: 0.1.4
 - State: <span style="color:green">Supported</span>
 
 ## Credit

@@ -178,10 +178,10 @@ class TestCustomCheck:
             _ = custom_check_float.run(4)
 
     def test_custom(self):
-        assert CustomCheck(type='custom', cond=1 == 1).run() is None
-        assert CustomCheck(type='custom', cond=len([1, 2, 3, 4]) == 4).run() is None
+        assert CustomCheck(type='custom', op=1 == 1).run() is None
+        assert CustomCheck(type='custom', op=len([1, 2, 3, 4]) == 4).run() is None
         with pytest.raises(CustomCheckError):
-            CustomCheck(type='custom', cond=3 == 4).run()
+            CustomCheck(type='custom', op=3 == 4).run()
 
     def test_match(self):
         custom_check_match = CustomCheck(
@@ -191,3 +191,16 @@ class TestCustomCheck:
         assert custom_check_match.run('0234678956') is None
         with pytest.raises(CustomCheckError):
             _ = custom_check_match.run('abc')
+
+    def test_is_castable(self):
+        custom_check_match = CustomCheck(
+            type='is_castable',
+            op=int
+        )
+        assert custom_check_match.run(4) is None
+        assert custom_check_match.run('4') is None
+        assert custom_check_match.run(3.8) is None
+        with pytest.raises(CustomCheckError):
+            _ = custom_check_match.run('abc')
+        with pytest.raises(CustomCheckError):
+            _ = custom_check_match.run('3.8')
