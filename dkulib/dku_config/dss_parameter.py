@@ -19,6 +19,8 @@ class DSSParameter:
         value(Any): Value of the parameter
         checks(list[dict], optional): Checks to run on provided value
         required(bool, optional): Whether the value can be None
+        cast_to(type, optional): The type to cast the variable in
+        cast_to(Any, optional): The default value of the variable (If value is None)
     """
     def __init__(self, name: str, value: Any, checks: List[dict] = None, required: bool = False, cast_to: type = None, default: Any = None):
         """Initialization method for the DSSParameter class
@@ -28,25 +30,42 @@ class DSSParameter:
             value(Any): Value of the parameter
             checks(list[dict], optional): Checks to run on provided value
             required(bool, optional): Whether the value can be None
+            cast_to(type, optional): The type to cast the variable in
+            default(Any, optional): The default value of the variable (If value is None)
         """
         if checks is None:
             checks = []
         self.name = name
         self.value = value if value is not None else default
-        value_exists = self.run_checks([CustomCheck(type='exists')], raise_error=required)
+        self.required = required
         self.cast_to = cast_to
         self.checks = [CustomCheck(**check) for check in checks]
+
+        value_exists = self.run_checks([CustomCheck(type='exists')], raise_error=self.required)
         if value_exists:
             if self.cast_to:
-                self.run_checks([CustomCheck(type='is_castable', op=cast_to)])
                 self.cast_value()
             self.run_checks(self.checks)
 
     def cast_value(self):
-        self.value = self.cast_to(self.value) if self.cast_to else self.value
+        """Cast the value if there is as cast_to attribute else return the value as it is
+        """
+        if self.cast_to:
+            self.run_checks([CustomCheck(type='is_castable', op=self.cast_to)])
+            self.value = self.cast_to(self.value)
 
     def run_checks(self, checks, raise_error=True):
         """Runs all checks provided for this parameter
+
+        Args:
+            checks(list[Check]): Checks to run
+            raise_error(bool, optional): Whether to rise an error if a check fails
+
+        Returns:
+            bool: Whether all checks have passed
+
+        Raises:
+            DSSParameterError: Raises if at least on check fails and raise_error is True
         """
         for check in checks:
             try:
@@ -55,13 +74,14 @@ class DSSParameter:
                 if raise_error:
                     self.handle_failure(err)
                 return False
+        self.handle_success()
         return True
 
     def handle_failure(self, error: CustomCheckError):
         """Is called when at least one test fails. It will raise an Exception with understandable text
 
         Args:
-            error(CustomCheckError: Errors met when running checks
+            error(CustomCheckError): Errors met when running checks
 
         Raises:
             DSSParameterError: Raises if at least on check fails
@@ -72,7 +92,7 @@ class DSSParameter:
         """Format failure text
 
         Args:
-            error(CustomCheckError: Error met when running check
+            error(CustomCheckError): Error met when running check
 
         Returns:
             str: Formatted error message
@@ -94,7 +114,7 @@ class DSSParameter:
     def print_success_message(self):
         """Formats the success message
         """
-        logger.debug('All checks have been successfully done for {}.'.format(self.name))
+        logger.debug('All checks passed successfully for {}.'.format(self.name))
 
     def __repr__(self):
         return "DSSParameter(name={}, value={})".format(self.name, self.value)

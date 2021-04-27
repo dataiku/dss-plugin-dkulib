@@ -19,8 +19,7 @@ class TestDSSParameter:
         )
         assert dss_parameter.value == 3
         assert dss_parameter.name == 'test'
-        assert len([c for c in dss_parameter.checks if c.type == 'exists'])
-        assert len(dss_parameter.checks) == 2
+        assert len(dss_parameter.checks) == 1
 
     def test_error(self):
         with pytest.raises(CustomCheckError):
@@ -45,7 +44,7 @@ class TestDSSParameter:
             }],
             required=True
         )
-        assert 'All checks have been successfully done' in caplog.text
+        assert 'All checks passed successfully' in caplog.text
 
     def test_failure(self, caplog):
         caplog.set_level(logging.INFO)
@@ -76,3 +75,88 @@ class TestDSSParameter:
         assert 'Error for parameter' in error_message
         assert 'required' not in error_message
         assert 'less' in error_message
+
+    def test_default(self, caplog):
+        dss_parameter_1 = DSSParameter(
+            name='test_1',
+            value=None,
+            default=4
+        )
+        assert dss_parameter_1.value == 4
+
+        dss_parameter_2 = DSSParameter(
+            name='test_2',
+            value=3,
+            default=4
+        )
+        assert dss_parameter_2.value == 3
+
+        dss_parameter_3 = DSSParameter(
+            name='test_2',
+            value=None,
+            default=4,
+            required=True
+        )
+        assert dss_parameter_3.value == 4
+
+    def test_cast(self, caplog):
+        dss_parameter_1 = DSSParameter(
+            name='test_1',
+            value='4',
+            cast_to=int
+        )
+        assert dss_parameter_1.value == 4
+
+        dss_parameter_2 = DSSParameter(
+            name='test_2',
+            value=4,
+            cast_to=int
+        )
+        assert dss_parameter_2.value == 4
+
+        caplog.set_level(logging.INFO)
+        with pytest.raises(DSSParameterError) as err:
+            _ = DSSParameter(
+                name='test_3',
+                value='foo',
+                cast_to=int
+            )
+            error_message = str(err.value)
+            assert 'Error for parameter' in error_message
+            assert '<class \'int\'>' in error_message
+            assert '<class \'str\'>' in error_message
+
+        with pytest.raises(DSSParameterError) as err:
+            _ = DSSParameter(
+                name='test_4',
+                value=[1, 2, 3],
+                cast_to=float
+            )
+            error_message = str(err.value)
+            assert '<class \'list\'>' in error_message
+            assert '<class \'float\'>' in error_message
+
+        dss_parameter_5 = DSSParameter(
+            name='test_5',
+            value=None,
+            cast_to=int,
+            default=5
+        )
+        assert dss_parameter_5.value == 5
+
+        with pytest.raises(DSSParameterError) as err:
+            _ = DSSParameter(
+                name='test_6',
+                value=None,
+                cast_to=str,
+                required=True
+            )
+            error_message = str(err.value)
+            assert 'required' in error_message
+
+        dss_parameter_7 = DSSParameter(
+            name='test_5',
+            value=None,
+            cast_to=int,
+        )
+        assert dss_parameter_7.value == None

@@ -15,8 +15,8 @@ DEFAULT_ERROR_MESSAGES = {
     'inf_eq': 'Should be less than or equal to {op} (Currently {value}).',
     'between': 'Should be between {op[0]} and {op[1]} inclusive (Currently {value}).',
     'between_strict': 'Should be between {op[0]} and {op[1]} exclusive (Currently {value}).',
-    'is_type': 'Should be of type {op}.',
-    'is_castable': 'You cannot cast {value} to the type {op}.',
+    'is_type': 'Should be of type <class \'{op}\'> (Currently {value_type}).',
+    'is_castable': 'Should be castable to type {op}> (Currently {value} with type {value_type}.',
     'custom': "There has been an unknown error.",
     'match': "Should match the following pattern: {op}."
 }
@@ -95,7 +95,7 @@ class CustomCheck:
         Returns:
             str: Error messages formatted
         """
-        formatted_err_msg = self.err_msg.format(value=value, op=self.op)
+        formatted_err_msg = self.err_msg.format(value=value, op=self.op, value_type=type(value))
         return f'{formatted_err_msg}'
 
     def _exists(self, value: Any) -> bool:
@@ -232,7 +232,7 @@ class CustomCheck:
         try:
             _ = self.op(value)
             return True
-        except TypeError:
+        except (TypeError, ValueError):
             return False
 
     def _custom(self, _) -> bool:
