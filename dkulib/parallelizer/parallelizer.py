@@ -53,16 +53,14 @@ class ErrorHandling(Enum):
 
 class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
-    pass
 
 
 def build_unique_column_names(existing_names: List[AnyStr], column_prefix: AnyStr) -> NamedTuple:
     """Return a named tuple with prefixed API column names and their descriptions"""
     ApiColumnNameTuple = namedtuple("ApiColumnNameTuple", API_COLUMN_NAMES_DESCRIPTION_DICT.keys())
-    api_column_names = ApiColumnNameTuple(
+    return ApiColumnNameTuple(
         *[generate_unique(column_name, existing_names, column_prefix) for column_name in ApiColumnNameTuple._fields]
     )
-    return api_column_names
 
 
 def apply_function_to_row(
@@ -175,13 +173,10 @@ def convert_results_to_df(
         for column_name, schema_type in output_schema.items()
         if column_name not in columns_to_exclude
     }
-    record_list = [
-        {column_name: results.get(column_name) for column_name in output_schema.keys()} for results in results
-    ]
+    record_list = [{column_name: results.get(column_name) for column_name in output_schema} for results in results]
     column_list = [column_name for column_name in column_names if column_name not in columns_to_exclude]
     output_column_list = list(input_df.columns) + column_list
-    output_df = pd.DataFrame.from_records(record_list).astype(output_schema).reindex(columns=output_column_list)
-    return output_df
+    return pd.DataFrame.from_records(record_list).astype(output_schema).reindex(columns=output_column_list)
 
 
 def parallelizer(
@@ -256,12 +251,14 @@ def parallelizer(
     }
     for kwarg in ["fn", "row", "batch"]:  # Reserved pool keyword arguments
         pool_kwargs.pop(kwarg, None)
-    if not batch_support and "batch_response_parser" in pool_kwargs.keys():
+    if not batch_support and "batch_response_parser" in pool_kwargs:
         pool_kwargs.pop("batch_response_parser", None)
     results = []
     with ThreadPoolExecutor(max_workers=parallel_workers) as pool:
         if batch_support:
-            futures = [pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator]
+            futures = [
+                pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator
+            ]
         else:
             futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_row_generator]
         for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):

@@ -4,11 +4,11 @@
 # see https://docs.pytest.org for more information
 
 import json
-from typing import AnyStr, Dict, List
+from typing import AnyStr, Dict, List, NamedTuple
+from copy import deepcopy
 from enum import Enum
 from urllib.error import URLError
 
-import pytest
 import pandas as pd
 
 from dkulib.parallelizer.parallelizer import parallelizer  # noqa
@@ -79,6 +79,16 @@ def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyS
     return batch_response
 
 
+def batch_response_parser(batch: List[Dict], response: List, column_names: NamedTuple) -> List[Dict]:
+    output_batch = deepcopy(batch)
+    for i in range(len(response)):
+        output_batch[i][column_names.response] = json.dumps(response[i]) if response[i] else ""
+        output_batch[i][column_names.error_message] = ""
+        output_batch[i][column_names.error_type] = ""
+        output_batch[i][column_names.error_raw] = ""
+    return output_batch
+
+
 def test_api_success():
     """Test the parallelizer logging system in case the mock API function returns successfully"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS]})
@@ -117,23 +127,33 @@ def test_invalid_input():
 
 def test_batch_api():
     """Test the parallelizer logging system in batch mode for the three cases above"""
-    input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS, APICaseEnum.API_FAILURE, APICaseEnum.INVALID_INPUT]})
+    batch_size = 3
+    input_df = pd.DataFrame(
+        {
+            INPUT_COLUMN: batch_size * [APICaseEnum.SUCCESS]
+            + batch_size * [APICaseEnum.INVALID_INPUT]
+            + batch_size * [APICaseEnum.API_FAILURE]
+        }
+    )
     df = parallelizer(
         input_df=input_df,
         function=call_mock_api_batch,
         batch_support=True,
-        batch_response_parser=lambda x: x,
+        batch_size=batch_size,
+        batch_response_parser=batch_response_parser,
         exceptions=API_EXCEPTIONS,
         column_prefix=COLUMN_PREFIX,
         api_function_param="invalid_integer",
     )
-    expected_dictionary_list = [
-        APICaseEnum.SUCCESS.value,
-        APICaseEnum.INVALID_INPUT.value,
-        APICaseEnum.INVALID_INPUT.value
-    ]
+    expected_dictionary_list = sorted(
+        batch_size * [APICaseEnum.SUCCESS.value]
+        + batch_size * [APICaseEnum.INVALID_INPUT.value]
+        + batch_size * [APICaseEnum.API_FAILURE.value],
+        key=lambda x: x["test_api_error_type"],
+    )
+    print(df.sort_values(by="test_api_error_type").test_api_error_message)
     for i in range(len(input_df.index)):
-        output_dictionary = df.iloc[i, :].to_dict()
+        output_dictionary = df.sort_values(by="test_api_error_type").iloc[i, :].to_dict()
         expected_dictionary = expected_dictionary_list[i]
         for k in expected_dictionary:
             assert output_dictionary[k] == expected_dictionary[k]
