@@ -240,10 +240,10 @@ def parallelizer(
             + f" using batch size of {batch_size}..."
         )
         df_row_batch_generator = chunked(df_row_generator, batch_size)
-        len_iterator = math.ceil(df_num_rows / batch_size)
+        len_generator = math.ceil(df_num_rows / batch_size)
     else:
         logging.info(f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)...")
-        len_iterator = df_num_rows
+        len_generator = df_num_rows
     column_names = build_unique_column_names(input_df.columns, column_prefix)
     pool_kwargs = {
         **{
@@ -264,7 +264,7 @@ def parallelizer(
             futures = [pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator]
         else:
             futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_row_generator]
-        for future in tqdm_auto(as_completed(futures), total=len_iterator):
+        for future in tqdm_auto(as_completed(futures), total=len_generator):
             results.append(future.result())
     if batch_support:
         results = flatten(results)
