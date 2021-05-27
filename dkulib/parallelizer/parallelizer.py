@@ -53,7 +53,6 @@ class ErrorHandling(Enum):
 
 class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
-
     pass
 
 
