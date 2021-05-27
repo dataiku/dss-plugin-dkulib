@@ -196,7 +196,7 @@ def parallelizer(
     verbose: bool = DEFAULT_VERBOSE,
     **function_kwargs,
 ) -> pd.DataFrame:
-    """Apply a function to a pandas.DataFrame with parallelization, batching, error handling and progress tracking
+    """Apply a function to a pandas.DataFrame with parallelization, batching, error logging and progress tracking
 
     The DataFrame is iterated on and passed to the function as dictionaries, row-by-row or by batches of rows.
     This iterative process is accelerated by the use of concurrent threads and is tracked with a progress bar.
