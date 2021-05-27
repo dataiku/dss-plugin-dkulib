@@ -229,7 +229,9 @@ def parallelizer(
         - error type if any
 
     """
-    df_iterator = (index_series_pair[1].to_dict() for index_series_pair in input_df.iterrows())
+    # First, we create a generator expression to yield each row of the input dataframe.
+    # Each row will be represented as a dictionary like {"column_name_1": "foo", "column_name_2": 42}
+    df_row_generator = (index_series_pair[1].to_dict() for index_series_pair in input_df.iterrows())
     df_num_rows = len(input_df.index)
     start = perf_counter()
     if batch_support:
@@ -237,7 +239,7 @@ def parallelizer(
             f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)"
             + f" using batch size of {batch_size}..."
         )
-        df_iterator = chunked(df_iterator, batch_size)
+        df_row_batch_generator = chunked(df_row_generator, batch_size)
         len_iterator = math.ceil(df_num_rows / batch_size)
     else:
         logging.info(f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)...")
@@ -259,9 +261,9 @@ def parallelizer(
     results = []
     with ThreadPoolExecutor(max_workers=parallel_workers) as pool:
         if batch_support:
-            futures = [pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_iterator]
+            futures = [pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator]
         else:
-            futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_iterator]
+            futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_row_generator]
         for future in tqdm_auto(as_completed(futures), total=len_iterator):
             results.append(future.result())
     if batch_support:
