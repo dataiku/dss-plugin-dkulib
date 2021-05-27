@@ -270,7 +270,7 @@ def parallelizer(
     num_success = len(input_df.index) - num_error
     logging.info(
         (
-            f"Applying function in parallel: {num_success} row(s) succeeded, {num_error} failed "
+            f"Applied function in parallel: {num_success} row(s) succeeded, {num_error} failed "
             f"in {(perf_counter() - start):.2f} seconds."
         )
     )
