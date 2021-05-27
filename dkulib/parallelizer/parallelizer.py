@@ -230,17 +230,18 @@ def parallelizer(
 
     """
     df_iterator = (index_series_pair[1].to_dict() for index_series_pair in input_df.iterrows())
-    len_iterator = len(input_df.index)
+    df_num_rows = len(input_df.index)
     start = perf_counter()
     if batch_support:
         logging.info(
-            f"Applying function {function.__name__} in parallel to {len_iterator} row(s)"
+            f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)"
             + f" using batch size of {batch_size}..."
         )
         df_iterator = chunked(df_iterator, batch_size)
-        len_iterator = math.ceil(len_iterator / batch_size)
+        len_iterator = math.ceil(df_num_rows / batch_size)
     else:
-        logging.info(f"Applying function {function.__name__} in parallel to {len_iterator} row(s)...")
+        logging.info(f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)...")
+        len_iterator = df_num_rows
     column_names = build_unique_column_names(input_df.columns, column_prefix)
     pool_kwargs = {
         **{
