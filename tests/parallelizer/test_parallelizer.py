@@ -122,6 +122,7 @@ def test_batch_api():
         input_df=input_df,
         function=call_mock_api_batch,
         batch_support=True,
+        batch_response_parser=lambda x: x,
         exceptions=API_EXCEPTIONS,
         column_prefix=COLUMN_PREFIX,
         api_function_param="invalid_integer",
