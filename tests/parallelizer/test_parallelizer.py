@@ -61,6 +61,7 @@ def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
 
 
 def test_api_success():
+    """Test the logging system in case the mock API function returns successfully"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS]})
     df = parallelizer(input_df=input_df, function=call_mock_api, exceptions=API_EXCEPTIONS, column_prefix=COLUMN_PREFIX)
     output_dictionary = df.iloc[0, :].to_dict()
@@ -70,6 +71,7 @@ def test_api_success():
 
 
 def test_api_failure():
+    """Test the logging system in case the mock API function raises an URLError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.API_FAILURE]})
     df = parallelizer(input_df=input_df, function=call_mock_api, exceptions=API_EXCEPTIONS, column_prefix=COLUMN_PREFIX)
     output_dictionary = df.iloc[0, :].to_dict()
@@ -79,6 +81,7 @@ def test_api_failure():
 
 
 def test_invalid_input():
+    """Test the logging system in case the mock API function raises a ValueError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.INVALID_INPUT]})
     df = parallelizer(
         input_df=input_df,
