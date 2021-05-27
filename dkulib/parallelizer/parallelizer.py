@@ -264,7 +264,7 @@ def parallelizer(
             futures = [pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator]
         else:
             futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_row_generator]
-        for future in tqdm_auto(as_completed(futures), total=len_generator):
+        for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):
             results.append(future.result())
     if batch_support:
         results = flatten(results)
