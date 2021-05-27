@@ -134,5 +134,6 @@ def test_batch_api():
     ]
     for i in range(len(input_df.index)):
         output_dictionary = df.iloc[i, :].to_dict()
-        for k in expected_dictionary[i]:
-            assert output_dictionary[k] == expected_dictionary[i][k]
+        expected_dictionary = expected_dictionary_list[i]
+        for k in expected_dictionary:
+            assert output_dictionary[k] == expected_dictionary[k]
