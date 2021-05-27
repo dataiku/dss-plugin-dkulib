@@ -7,7 +7,7 @@ test-one:
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip3 install --no-cache-dir -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
+		pip3 install -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
 		export PYTHONPATH="$(PYTHONPATH):$(PWD)"; \
 		export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
 		export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
