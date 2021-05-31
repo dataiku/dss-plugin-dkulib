@@ -79,13 +79,13 @@ def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyS
     return batch_response
 
 
-def batch_response_parser(batch: List[Dict], response: List, column_names: NamedTuple) -> List[Dict]:
+def batch_response_parser(batch: List[Dict], response: List, output_column_names: NamedTuple) -> List[Dict]:
     output_batch = deepcopy(batch)
     for i in range(len(response)):
-        output_batch[i][column_names.response] = json.dumps(response[i]) if response[i] else ""
-        output_batch[i][column_names.error_message] = ""
-        output_batch[i][column_names.error_type] = ""
-        output_batch[i][column_names.error_raw] = ""
+        output_batch[i][output_column_names.response] = json.dumps(response[i]) if response[i] else ""
+        output_batch[i][output_column_names.error_message] = ""
+        output_batch[i][output_column_names.error_type] = ""
+        output_batch[i][output_column_names.error_raw] = ""
     return output_batch
 
 
