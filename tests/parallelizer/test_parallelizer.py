@@ -9,9 +9,10 @@ from copy import deepcopy
 from enum import Enum
 from urllib.error import URLError
 
+import pytest
 import pandas as pd
 
-from dkulib.parallelizer.parallelizer import parallelizer  # noqa
+from dkulib.parallelizer.parallelizer import parallelizer, ErrorHandling
 
 
 # ==============================================================================
@@ -89,12 +90,24 @@ def batch_response_parser(batch: List[Dict], response: List, output_column_names
     return output_batch
 
 
-def test_api_success():
+@pytest.mark.parametrize("error_handling", [ErrorHandling.LOG, ErrorHandling.FAIL])
+def test_api_success(error_handling):
     """Test the parallelizer logging system in case the mock API function returns successfully"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS]})
-    df = parallelizer(input_df=input_df, function=call_mock_api, exceptions=API_EXCEPTIONS, column_prefix=COLUMN_PREFIX)
+    df = parallelizer(
+        input_df=input_df,
+        function=call_mock_api,
+        exceptions=API_EXCEPTIONS,
+        column_prefix=COLUMN_PREFIX,
+        error_handling=error_handling,
+    )
     output_dictionary = df.iloc[0, :].to_dict()
-    expected_dictionary = APICaseEnum.SUCCESS.value
+    if error_handling == error_handling.LOG:
+        assert df.shape[1] == 4
+        expected_dictionary = APICaseEnum.SUCCESS.value
+    else:
+        assert df.shape[1] == 2
+        expected_dictionary = {k: v for k, v in APICaseEnum.SUCCESS.value.items() if "error" not in k}
     for k in expected_dictionary:
         assert output_dictionary[k] == expected_dictionary[k]
 
