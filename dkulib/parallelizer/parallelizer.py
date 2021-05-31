@@ -65,7 +65,7 @@ def build_unique_column_names(existing_names: List[AnyStr], column_prefix: AnySt
 
 def apply_function_to_row(
     function: Callable,
-    column_names: NamedTuple,
+    output_column_names: NamedTuple,
     row: Dict,
     exceptions: Union[Exception, Tuple[Exception]],
     error_handling: ErrorHandling = ErrorHandling.LOG,
@@ -85,28 +85,28 @@ def apply_function_to_row(
     output_row = deepcopy(row)
     if error_handling == ErrorHandling.FAIL:
         response = function(row=row, **function_kwargs)
-        output_row[column_names.response] = response
+        output_row[output_column_names.response] = response
     else:
-        for column_name in column_names:
+        for column_name in output_column_names:
             output_row[column_name] = ""
         try:
             response = function(row=row, **function_kwargs)
-            output_row[column_names.response] = response
+            output_row[output_column_names.response] = response
         except exceptions as error:
             logging.warning(f"Function {function.__name__} failed on: {row} because of error: {error}")
             error_type = str(type(error).__qualname__)
             module = inspect.getmodule(error)
             if module is not None:
                 error_type = str(module.__name__) + "." + error_type
-            output_row[column_names.error_message] = str(error)
-            output_row[column_names.error_type] = error_type
-            output_row[column_names.error_raw] = str(error.args)
+            output_row[output_column_names.error_message] = str(error)
+            output_row[output_column_names.error_type] = error_type
+            output_row[output_column_names.error_raw] = str(error.args)
     return output_row
 
 
 def apply_function_to_batch(
     function: Callable,
-    column_names: NamedTuple,
+    output_column_names: NamedTuple,
     batch: List[Dict],
     batch_response_parser: Callable,
     exceptions: Union[Exception, Tuple[Exception]],
@@ -127,14 +127,18 @@ def apply_function_to_batch(
     output_batch = deepcopy(batch)
     if error_handling == ErrorHandling.FAIL:
         response = function(batch=batch, **function_kwargs)
-        output_batch = batch_response_parser(batch=batch, response=response, column_names=column_names)
-        errors = [row[column_names.error_message] for row in batch if row[column_names.error_message] != ""]
+        output_batch = batch_response_parser(batch=batch, response=response, output_column_names=output_column_names)
+        errors = [
+            row[output_column_names.error_message] for row in batch if row[output_column_names.error_message] != ""
+        ]
         if len(errors) != 0:
             raise BatchError(f"Batch function {function.__name__} failed on: {batch} because of error: {errors}")
     else:
         try:
             response = function(batch=batch, **function_kwargs)
-            output_batch = batch_response_parser(batch=batch, response=response, column_names=column_names)
+            output_batch = batch_response_parser(
+                batch=batch, response=response, output_column_names=output_column_names
+            )
         except exceptions as error:
             logging.warning(f"Batch function {function.__name__} failed on: {batch} because of error: {error}")
             error_type = str(type(error).__qualname__)
@@ -142,17 +146,17 @@ def apply_function_to_batch(
             if module is not None:
                 error_type = str(module.__name__) + "." + error_type
             for row in output_batch:
-                row[column_names.response] = ""
-                row[column_names.error_message] = str(error)
-                row[column_names.error_type] = error_type
-                row[column_names.error_raw] = str(error.args)
+                row[output_column_names.response] = ""
+                row[output_column_names.error_message] = str(error)
+                row[output_column_names.error_type] = error_type
+                row[output_column_names.error_raw] = str(error.args)
     return output_batch
 
 
 def convert_results_to_df(
     input_df: pd.DataFrame,
     results: List[Dict],
-    column_names: NamedTuple,
+    output_column_names: NamedTuple,
     error_handling: ErrorHandling = ErrorHandling.LOG,
     verbose: bool = DEFAULT_VERBOSE,
 ) -> pd.DataFrame:
@@ -162,20 +166,23 @@ def convert_results_to_df(
 
     """
     if error_handling == ErrorHandling.FAIL:
-        columns_to_exclude = [column_name for key, column_name in column_names._asdict().items() if "error" in key]
+        columns_to_exclude = [
+            column_name for key, column_name in output_column_names._asdict().items() if "error" in key
+        ]
     else:
         columns_to_exclude = []
         if not verbose:
-            columns_to_exclude = [column_names.error_raw]
-    output_schema = {**{column_name: str for column_name in column_names}, **dict(input_df.dtypes)}
+            columns_to_exclude = [output_column_names.error_raw]
+    output_schema = {**{column_name: str for column_name in output_column_names}, **dict(input_df.dtypes)}
     output_schema = {
         column_name: schema_type
         for column_name, schema_type in output_schema.items()
         if column_name not in columns_to_exclude
     }
     record_list = [{column_name: results.get(column_name) for column_name in output_schema} for results in results]
-    column_list = [column_name for column_name in column_names if column_name not in columns_to_exclude]
-    output_column_list = list(input_df.columns) + column_list
+    output_column_list = list(input_df.columns) + [
+        column_name for column_name in output_column_names if column_name not in columns_to_exclude
+    ]
     return pd.DataFrame.from_records(record_list).astype(output_schema).reindex(columns=output_column_list)
 
 
@@ -239,13 +246,13 @@ def parallelizer(
     else:
         logging.info(f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)...")
         len_generator = df_num_rows
-    column_names = build_unique_column_names(input_df.columns, column_prefix)
+    output_column_names = build_unique_column_names(input_df.columns, column_prefix)
     pool_kwargs = {
         **{
             "function": function,
             "error_handling": error_handling,
             "exceptions": exceptions,
-            "column_names": column_names,
+            "output_column_names": output_column_names,
         },
         **function_kwargs.copy(),
     }
@@ -265,8 +272,8 @@ def parallelizer(
             results.append(future.result())
     if batch_support:
         results = flatten(results)
-    output_df = convert_results_to_df(input_df, results, column_names, error_handling, verbose)
-    num_error = sum(output_df[column_names.response] == "")
+    output_df = convert_results_to_df(input_df, results, output_column_names, error_handling, verbose)
+    num_error = sum(output_df[output_column_names.response] == "")
     num_success = len(input_df.index) - num_error
     logging.info(
         (
