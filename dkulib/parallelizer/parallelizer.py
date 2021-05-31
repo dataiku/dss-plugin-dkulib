@@ -63,94 +63,64 @@ def build_unique_column_names(existing_names: List[AnyStr], column_prefix: AnySt
     )
 
 
-def apply_function_to_row(
+def apply_function_and_parse_response(
     function: Callable,
     output_column_names: NamedTuple,
-    row: Dict,
     exceptions: Union[Exception, Tuple[Exception]],
+    row: Dict = None,
+    batch: List[Dict] = None,
+    batch_response_parser: Callable = None,
     error_handling: ErrorHandling = ErrorHandling.LOG,
-    verbose: bool = DEFAULT_VERBOSE,
-    **function_kwargs,
-) -> Dict:
-    """Wrap a *single-row* function with error handling
-
-    It takes the `function` as input and:
-    - ensures it has a `row` parameter which is a dict
-    - parses the function response to extract results and errors
-    - handles errors from the function with two methods:
-        * (default) log the error message as a warning and return the row with error keys
-        * fail if there is an error
-
-    """
-    output_row = deepcopy(row)
-    if error_handling == ErrorHandling.FAIL:
-        response = function(row=row, **function_kwargs)
-        output_row[output_column_names.response] = response
-    else:
-        for column_name in output_column_names:
-            output_row[column_name] = ""
-        try:
-            response = function(row=row, **function_kwargs)
-            output_row[output_column_names.response] = response
-        except exceptions as error:
-            logging.warning(f"Function {function.__name__} failed on: {row} because of error: {error}")
-            error_type = str(type(error).__qualname__)
-            module = inspect.getmodule(error)
-            if module is not None:
-                error_type = str(module.__name__) + "." + error_type
-            output_row[output_column_names.error_message] = str(error)
-            output_row[output_column_names.error_type] = error_type
-            output_row[output_column_names.error_raw] = str(error.args)
-    return output_row
-
-
-def apply_function_to_batch(
-    function: Callable,
-    output_column_names: NamedTuple,
-    batch: List[Dict],
-    batch_response_parser: Callable,
-    exceptions: Union[Exception, Tuple[Exception]],
-    error_handling: ErrorHandling = ErrorHandling.LOG,
-    verbose: bool = DEFAULT_VERBOSE,
     **function_kwargs,
 ) -> List[Dict]:
-    """Wrap a *batch* function with error handling and response parsing
+    """Wraps a row-by-row or batch function with error handling and response parsing
 
     It takes the `function` as input and:
-    - ensures it has a `batch` parameter which is a list of dict
-    - parses the response to extract results and errors using the `batch_response_parser` function
+    - ensures it has a  `row` parameter which is a dict, or `batch` parameter which is a list of dict
+    - If batch, parse the response to extract results and errors using the `batch_response_parser` function
     - handles errors from the function with two methods:
         * (default) log the error message as a warning and return the row with error keys
         * fail if there is an error
 
     """
-    output_batch = deepcopy(batch)
-    if error_handling == ErrorHandling.FAIL:
-        response = function(batch=batch, **function_kwargs)
-        output_batch = batch_response_parser(batch=batch, response=response, output_column_names=output_column_names)
-        errors = [
-            row[output_column_names.error_message] for row in batch if row[output_column_names.error_message] != ""
-        ]
-        if len(errors) != 0:
-            raise BatchError(f"Batch function {function.__name__} failed on: {batch} because of error: {errors}")
-    else:
-        try:
-            response = function(batch=batch, **function_kwargs)
-            output_batch = batch_response_parser(
-                batch=batch, response=response, output_column_names=output_column_names
-            )
-        except exceptions as error:
-            logging.warning(f"Batch function {function.__name__} failed on: {batch} because of error: {error}")
-            error_type = str(type(error).__qualname__)
-            module = inspect.getmodule(error)
-            if module is not None:
-                error_type = str(module.__name__) + "." + error_type
-            for row in output_batch:
-                row[output_column_names.response] = ""
-                row[output_column_names.error_message] = str(error)
-                row[output_column_names.error_type] = error_type
-                row[output_column_names.error_raw] = str(error.args)
-    return output_batch
+    if row and batch:
+        raise (ValueError("Please use either row or batch as arguments, but not both"))
+    output = deepcopy(row) if row else deepcopy(batch)
+    for output_column in output_column_names:
+        if row:
+            output[output_column] = ""
+        else:
+            for output_row in output:
+                output_row[output_column] = ""
+    try:
+        response = function(row=row, **function_kwargs) if row else function(batch=batch, **function_kwargs)
+        if row:
+            output[output_column_names.response] = response
+        else:
+            output = batch_response_parser(batch=batch, response=response, output_column_names=output_column_names)
+            errors = [
+                row[output_column_names.error_message] for row in output if row[output_column_names.error_message]
+            ]
+            if errors:
+                raise BatchError(str(errors))
+    except exceptions + (BatchError,) as error:
+        if error_handling == ErrorHandling.FAIL:
+            raise error
+        logging.warning(f"Function {function.__name__} failed on: {row if row else batch} because of error: {error}")
+        error_type = str(type(error).__qualname__)
+        module = inspect.getmodule(error)
+        if module:
+            error_type = f"{module.__name__}.{error_type}"
+        if row:
+            output[output_column_names.error_message] = str(error)
+            output[output_column_names.error_type] = error_type
+            output[output_column_names.error_raw] = str(error.args)
+        else:
+            for output_row in output:
+                output_row[output_column_names.error_message] = str(error)
+                output_row[output_column_names.error_type] = error_type
+                output_row[output_column_names.error_raw] = str(error.args)
+    return output
 
 
 def convert_results_to_df(
@@ -179,9 +149,7 @@ def convert_results_to_df(
             output_column_names.error_type,
             output_column_names.error_raw,
         ]
-        output_df.drop(
-            labels=error_columns, axis=1, inplace=True, errors="ignore"
-        )
+        output_df.drop(labels=error_columns, axis=1, inplace=True, errors="ignore")
     return output_df
 
 
@@ -263,10 +231,13 @@ def parallelizer(
     with ThreadPoolExecutor(max_workers=parallel_workers) as pool:
         if batch_support:
             futures = [
-                pool.submit(apply_function_to_batch, batch=batch, **pool_kwargs) for batch in df_row_batch_generator
+                pool.submit(apply_function_and_parse_response, batch=batch, **pool_kwargs)
+                for batch in df_row_batch_generator
             ]
         else:
-            futures = [pool.submit(apply_function_to_row, row=row, **pool_kwargs) for row in df_row_generator]
+            futures = [
+                pool.submit(apply_function_and_parse_response, row=row, **pool_kwargs) for row in df_row_generator
+            ]
         for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):
             results.append(future.result())
     if batch_support:

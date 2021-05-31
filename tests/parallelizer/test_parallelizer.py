@@ -164,7 +164,6 @@ def test_batch_api():
         + batch_size * [APICaseEnum.API_FAILURE.value],
         key=lambda x: x["test_api_error_type"],
     )
-    print(df.sort_values(by="test_api_error_type").test_api_error_message)
     for i in range(len(input_df.index)):
         output_dictionary = df.sort_values(by="test_api_error_type").iloc[i, :].to_dict()
         expected_dictionary = expected_dictionary_list[i]
