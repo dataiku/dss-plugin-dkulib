@@ -165,25 +165,24 @@ def convert_results_to_df(
     Helper function to the `parallelizer` main function
 
     """
-    if error_handling == ErrorHandling.FAIL:
-        columns_to_exclude = [
-            column_name for key, column_name in output_column_names._asdict().items() if "error" in key
-        ]
-    else:
-        columns_to_exclude = []
-        if not verbose:
-            columns_to_exclude = [output_column_names.error_raw]
     output_schema = {**{column_name: str for column_name in output_column_names}, **dict(input_df.dtypes)}
-    output_schema = {
-        column_name: schema_type
-        for column_name, schema_type in output_schema.items()
-        if column_name not in columns_to_exclude
-    }
-    record_list = [{column_name: results.get(column_name) for column_name in output_schema} for results in results]
-    output_column_list = list(input_df.columns) + [
-        column_name for column_name in output_column_names if column_name not in columns_to_exclude
-    ]
-    return pd.DataFrame.from_records(record_list).astype(output_schema).reindex(columns=output_column_list)
+    output_df = (
+        pd.DataFrame.from_records(results)
+        .reindex(columns=list(input_df.columns) + list(output_column_names))
+        .astype(output_schema)
+    )
+    if not verbose:
+        output_df.drop(labels=output_column_names.error_raw, axis=1, inplace=True)
+    if error_handling == ErrorHandling.FAIL:
+        error_columns = [
+            output_column_names.error_message,
+            output_column_names.error_type,
+            output_column_names.error_raw,
+        ]
+        output_df.drop(
+            labels=error_columns, axis=1, inplace=True, errors="ignore"
+        )
+    return output_df
 
 
 def parallelizer(
