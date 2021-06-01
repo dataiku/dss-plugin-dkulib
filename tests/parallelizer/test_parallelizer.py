@@ -47,6 +47,7 @@ class APICaseEnum(Enum):
 
 
 def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
+    """Call a mock API which works row-by-row"""
     test_case = row.get(INPUT_COLUMN)
     response = {}
     if test_case == APICaseEnum.SUCCESS:
@@ -62,6 +63,7 @@ def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
 
 
 def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyStr:
+    """Call a mock API which works by batches of rows"""
     batch_response = []
     for row in batch:
         test_case = row.get(INPUT_COLUMN)
@@ -80,6 +82,7 @@ def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyS
 
 
 def batch_response_parser(batch: List[Dict], response: List, output_column_names: NamedTuple) -> List[Dict]:
+    """Parse the response of `call_mock_api_batch` into a clean list of dict"""
     output_batch = deepcopy(batch)
     for i in range(len(response)):
         output_batch[i][output_column_names.response] = json.dumps(response[i]) if response[i] else ""
