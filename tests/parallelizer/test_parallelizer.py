@@ -94,9 +94,9 @@ def test_api_success(error_handling):
     """Test the parallelizer logging system in case the mock API function returns successfully"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS]})
     parallelizer = DataFrameParallelizer(
-        error_handling=error_handling, exceptions_to_catch=API_EXCEPTIONS
+        function=call_mock_api, error_handling=error_handling, exceptions_to_catch=API_EXCEPTIONS
     )
-    output_df = parallelizer.apply(df=input_df, function=call_mock_api)
+    output_df = parallelizer.run(input_df)
     output_dictionary = output_df.iloc[0, :].to_dict()
     if error_handling == error_handling.LOG:
         assert output_df.shape[1] == 4
@@ -111,8 +111,8 @@ def test_api_success(error_handling):
 def test_api_failure():
     """Test the parallelizer logging system in case the mock API function raises an URLError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.API_FAILURE]})
-    parallelizer = DataFrameParallelizer(exceptions_to_catch=API_EXCEPTIONS)
-    output_df = parallelizer.apply(df=input_df, function=call_mock_api)
+    parallelizer = DataFrameParallelizer(function=call_mock_api, exceptions_to_catch=API_EXCEPTIONS)
+    output_df = parallelizer.run(input_df)
     output_dictionary = output_df.iloc[0, :].to_dict()
     expected_dictionary = APICaseEnum.API_FAILURE.value
     for k in expected_dictionary:
@@ -122,8 +122,8 @@ def test_api_failure():
 def test_invalid_input():
     """Test the parallelizer logging system in case the mock API function raises a ValueError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.INVALID_INPUT]})
-    parallelizer = DataFrameParallelizer(exceptions_to_catch=API_EXCEPTIONS)
-    output_df = parallelizer.apply(df=input_df, function=call_mock_api, api_function_param="invalid_integer",)
+    parallelizer = DataFrameParallelizer(function=call_mock_api, exceptions_to_catch=API_EXCEPTIONS)
+    output_df = parallelizer.run(input_df, api_function_param="invalid_integer")
     output_dictionary = output_df.iloc[0, :].to_dict()
     expected_dictionary = APICaseEnum.INVALID_INPUT.value
     for k in expected_dictionary:
@@ -141,12 +141,13 @@ def test_batch_api():
         }
     )
     parallelizer = DataFrameParallelizer(
+        function=call_mock_api_batch,
         exceptions_to_catch=API_EXCEPTIONS,
         batch_support=True,
         batch_size=batch_size,
         batch_response_parser=batch_response_parser,
     )
-    output_df = parallelizer.apply(df=input_df, function=call_mock_api_batch, api_function_param="invalid_integer",)
+    output_df = parallelizer.run(input_df, api_function_param="invalid_integer")
     expected_dictionary_list = sorted(
         batch_size * [APICaseEnum.SUCCESS.value]
         + batch_size * [APICaseEnum.INVALID_INPUT.value]

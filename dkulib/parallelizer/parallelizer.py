@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Apply a function to a pandas DataFrame with parallelization, error handling and progress tracking"""
+"""Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking"""
 
 import logging
 import inspect
 import math
 
-from typing import Callable, AnyStr, List, Tuple, NamedTuple, Dict, Union
+from typing import Callable, AnyStr, Any, List, Tuple, NamedTuple, Dict, Union, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from time import perf_counter
@@ -31,21 +31,31 @@ class BatchError(ValueError):
 
 
 class DataFrameParallelizer:
-    """Apply a function to a pandas DataFrame with parallelization, error handling and progress tracking
+    """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking.
+
+    This class is particularly well-suited for synchronous functions calling an API, either row-by-row or by batch.
 
     Attributes:
-        error_handling: If ErrorHandling.LOG (default), log the error message as a warning
-            and return the row with error keys. Else fail is there is any error.
+        function: Any function taking a dict as input (row-by-row mode) or a list of dict (batch mode),
+            and returning a response with additional information, typically a JSON string.
+            In batch mode, the response from the function should be parsable by the `batch_response_parser` attribute.
+        error_handling: If ErrorHandling.LOG (default), log the error from the function as a warning,
+            and add additional columns to the dataframe with the error message and error type.
+            If ErrorHandling.FAIL, the function will fail is there is any error.
         exceptions_to_catch: Tuple of Exception classes to catch. Mandatory if ErrorHandling.LOG (default).
         parallel_workers: Number of concurrent threads to parallelize the function. Default is 4.
-        batch_support: If True, send batches of row to the `function`
+        batch_support: If True, send batches of row (list of dict) to the `function`
             Else (default) send rows as dict to the function
         batch_size: Number of rows to include in each batch. Default is 10.
-            Taken into account if `batch_support` is True
+            Taken into account if `batch_support` is True.
+        batch_response_parser: Function used to parse the raw response (list of dict) from the batch function
+            and assign the actual responses and errors back to the original batch (also list of dict).
+            This is often required for batch API
         output_column_prefix: Column prefix to add to the output columns for the `function` responses and errors.
             Default is "output".
         verbose: If True, log additional information on errors
             Else (default) log the error message and the error type
+
     """
 
     DEFAULT_PARALLEL_WORKERS = 4
@@ -53,61 +63,59 @@ class DataFrameParallelizer:
     DEFAULT_BATCH_SUPPORT = False
     DEFAULT_VERBOSE = False
     DEFAULT_OUTPUT_COLUMN_PREFIX = "output"
-    API_COLUMN_NAMES_DESCRIPTION_DICT = OrderedDict(
+    OUTPUT_COLUMN_NAME_DESCRIPTIONS = OrderedDict(
         [
-            ("response", "Raw response from the API in JSON format"),
-            ("error_message", "Error message from the API"),
-            ("error_type", "Error type or code from the API"),
-            ("error_raw", "Raw error from the API"),
+            ("response", "Raw response in JSON format"),
+            ("error_message", "Error message"),
+            ("error_type", "Error type or code"),
+            ("error_raw", "Raw error"),
         ]
     )
-    """Default dictionary of API column names (key) and their descriptions (value)"""
+    """Default dictionary of output column names (key) and their descriptions (value)"""
 
     def __init__(
         self,
+        function: Callable[[Union[Dict, List[Dict]]], Union[Dict, List[Dict]]],
         error_handling: ErrorHandling = ErrorHandling.LOG,
         exceptions_to_catch: Tuple[Exception] = (),
         parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
         batch_support: bool = DEFAULT_BATCH_SUPPORT,
         batch_size: int = DEFAULT_BATCH_SIZE,
-        batch_response_parser: Callable = None,
+        batch_response_parser: Optional[Callable[[List[Dict], Any, NamedTuple], List[Dict]]] = None,
         output_column_prefix: AnyStr = DEFAULT_OUTPUT_COLUMN_PREFIX,
         verbose: bool = DEFAULT_VERBOSE,
     ):
+        self.function = function
         self.error_handling = error_handling
         self.exceptions_to_catch = exceptions_to_catch
-        if self.error_handling == ErrorHandling.LOG and not self.exceptions_to_catch:
+        if error_handling == ErrorHandling.LOG and not exceptions_to_catch:
             raise ValueError("Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
+        if batch_support and not batch_response_parser:
+            raise ValueError("Please provide a valid batch_response_parser function")
         self.output_column_prefix = output_column_prefix
         self.verbose = verbose
 
-    def _build_unique_column_names(self, existing_names: List[AnyStr]) -> NamedTuple:
-        """Return a named tuple with prefixed API column names and their descriptions"""
-        ApiColumnNameTuple = namedtuple("ApiColumnNameTuple", self.API_COLUMN_NAMES_DESCRIPTION_DICT.keys())
-        return ApiColumnNameTuple(
+    def _get_unique_output_column_names(self, existing_names: List[AnyStr]) -> NamedTuple:
+        """Return a named tuple with prefixed column names and their descriptions"""
+        OutputColumnNameTuple = namedtuple("OutputColumnNameTuple", self.OUTPUT_COLUMN_NAME_DESCRIPTIONS.keys())
+        return OutputColumnNameTuple(
             *[
-                generate_unique(column_name, existing_names, self.output_column_prefix)
-                for column_name in ApiColumnNameTuple._fields
+                generate_unique(name=column_name, existing_names=existing_names, prefix=self.output_column_prefix)
+                for column_name in OutputColumnNameTuple._fields
             ]
         )
 
     def _apply_function_and_parse_response(
-        self,
-        function: Callable,
-        output_column_names: NamedTuple,
-        row: Dict = None,
-        batch: List[Dict] = None,
-        **function_kwargs,
-    ) -> List[Dict]:  # sourcery skip: or-if-exp-identity
-        """Wraps a row-by-row or batch function with error handling and response parsing
+        self, output_column_names: NamedTuple, row: Dict = None, batch: List[Dict] = None, **function_kwargs,
+    ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
+        """Wrap a row-by-row or batch function with error handling and response parsing
 
-        It takes the `function` as input and:
-        - ensures it has a  `row` parameter which is a dict, or `batch` parameter which is a list of dict
-        - If batch, parse the response to extract results and errors using the `batch_response_parser` function
+        It applies `self.function` and and:
+        - If batch, parse the response to extract results and errors using the `self.batch_response_parser` function
         - handles errors from the function with two methods:
             * (default) log the error message as a warning and return the row with error keys
             * fail if there is an error
@@ -123,7 +131,9 @@ class DataFrameParallelizer:
                 for output_row in output:
                     output_row[output_column] = ""
         try:
-            response = function(row=row, **function_kwargs) if row else function(batch=batch, **function_kwargs)
+            response = (
+                self.function(row=row, **function_kwargs) if row else self.function(batch=batch, **function_kwargs)
+            )
             if row:
                 output[output_column_names.response] = response
             else:
@@ -139,7 +149,7 @@ class DataFrameParallelizer:
             if self.error_handling == ErrorHandling.FAIL:
                 raise error
             logging.warning(
-                f"Function {function.__name__} failed on: {row if row else batch} because of error: {error}"
+                f"Function {self.function.__name__} failed on: {row if row else batch} because of error: {error}"
             )
             error_type = str(type(error).__qualname__)
             module = inspect.getmodule(error)
@@ -159,11 +169,7 @@ class DataFrameParallelizer:
     def _convert_results_to_df(
         self, df: pd.DataFrame, results: List[Dict], output_column_names: NamedTuple,
     ) -> pd.DataFrame:
-        """Combine results (list of dict) with input dataframe
-
-        Helper function to the `parallelizer` main function
-
-        """
+        """Combine results from the function with the input dataframe"""
         output_schema = {**{column_name: str for column_name in output_column_names}, **dict(df.dtypes)}
         output_df = (
             pd.DataFrame.from_records(results)
@@ -181,19 +187,16 @@ class DataFrameParallelizer:
             output_df.drop(labels=error_columns, axis=1, inplace=True, errors="ignore")
         return output_df
 
-    def apply(self, df: pd.DataFrame, function: Callable, **function_kwargs,) -> pd.DataFrame:
-        """Apply a function to a pandas.DataFrame with parallelization, batching, error logging and progress tracking
+    def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
+        """Apply a function to a pandas.DataFrame with parallelization, error logging and progress tracking
 
-        The DataFrame is iterated on and passed to the function as dictionaries, row-by-row or by batches of rows.
-        This iterative process is accelerated by the use of concurrent threads and is tracked with a progress bar.
-        Errors are catched if they match the `exceptions` parameter and automatically logged.
+        The DataFrame is iterated on and fed to the function as dictionaries, row-by-row or by batches of rows.
+        This process is accelerated by the use of concurrent threads and is tracked with a progress bar.
+        Errors are catched if they match the `self.exceptions_to_catch` attribute and automatically logged.
         Once the whole DataFrame has been iterated on, results and errors are added as additional columns.
 
         Args:
-            df: Input dataframe which will be iterated on
-            function: Function taking a dict as input and returning a dict
-                If `function_support_batch` then the function works on list of dict
-                For instance, a function to call an API or do some enrichment
+            df: Input dataframe on which the function will be applied
             **function_kwargs: Arbitrary keyword arguments passed to the `function`
 
         Returns:
@@ -210,15 +213,15 @@ class DataFrameParallelizer:
         start = perf_counter()
         if self.batch_support:
             logging.info(
-                f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)"
+                f"Applying function {self.function.__name__} in parallel to {df_num_rows} row(s)"
                 + f" using batch size of {self.batch_size}..."
             )
             df_row_batch_generator = chunked(df_row_generator, self.batch_size)
             len_generator = math.ceil(df_num_rows / self.batch_size)
         else:
-            logging.info(f"Applying function {function.__name__} in parallel to {df_num_rows} row(s)...")
+            logging.info(f"Applying function {self.function.__name__} in parallel to {df_num_rows} row(s)...")
             len_generator = df_num_rows
-        output_column_names = self._build_unique_column_names(existing_names=df.columns)
+        output_column_names = self._get_unique_output_column_names(existing_names=df.columns)
         pool_kwargs = {**{"output_column_names": output_column_names}, **function_kwargs.copy()}
         for kwarg in ["function", "row", "batch"]:  # Reserved pool keyword arguments
             pool_kwargs.pop(kwarg, None)
@@ -228,18 +231,17 @@ class DataFrameParallelizer:
         with ThreadPoolExecutor(max_workers=self.parallel_workers) as pool:
             if self.batch_support:
                 futures = [
-                    pool.submit(self._apply_function_and_parse_response, function=function, batch=batch, **pool_kwargs)
+                    pool.submit(self._apply_function_and_parse_response, batch=batch, **pool_kwargs)
                     for batch in df_row_batch_generator
                 ]
             else:
                 futures = [
-                    pool.submit(self._apply_function_and_parse_response, function=function, row=row, **pool_kwargs)
+                    pool.submit(self._apply_function_and_parse_response, row=row, **pool_kwargs)
                     for row in df_row_generator
                 ]
             for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):
                 results.append(future.result())
-        if self.batch_support:
-            results = flatten(results)
+        results = flatten(results) if self.batch_support else results
         output_df = self._convert_results_to_df(df, results, output_column_names)
         num_error = sum(output_df[output_column_names.response] == "")
         num_success = len(df.index) - num_error
