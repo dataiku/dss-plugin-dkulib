@@ -48,13 +48,13 @@ class DataFrameParallelizer:
             Else (default) send rows as dict to the function
         batch_size: Number of rows to include in each batch. Default is 10.
             Taken into account if `batch_support` is True.
-        batch_response_parser: Function used to parse the raw response (list of dict) from the batch function
-            and assign the actual responses and errors back to the original batch (also list of dict).
-            This is often required for batch API
-        output_column_prefix: Column prefix to add to the output columns for the `function` responses and errors.
-            Default is "output".
-        verbose: If True, log additional information on errors
-            Else (default) log the error message and the error type
+        batch_response_parser: Function used to parse the raw response from the function in batch mode,
+            and assign the actual responses and errors back to the original batch of row (list of dict).
+            This is often required for batch APIs which return nested objects with a mix of responses and errors.
+        output_column_prefix: Column prefix to add to the output columns of the dataframe,
+            containing the `function` responses and errors. Default is "output".
+        verbose: If True, log additional information on errors.
+            Else (default) log the error message and the error type.
 
     """
 
@@ -112,13 +112,13 @@ class DataFrameParallelizer:
     def _apply_function_and_parse_response(
         self, output_column_names: NamedTuple, row: Dict = None, batch: List[Dict] = None, **function_kwargs,
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
-        """Wrap a row-by-row or batch function with error handling and response parsing
+        """Wrap a row-by-row or batch function with error logging and response parsing
 
-        It applies `self.function` and and:
-        - If batch, parse the response to extract results and errors using the `self.batch_response_parser` function
+        It applies `self.function` and:
+        - If batch, parse the function response to extract results and errors using `self.batch_response_parser`
         - handles errors from the function with two methods:
             * (default) log the error message as a warning and return the row with error keys
-            * fail if there is an error
+            * fail if there is an error (if `self.error_handling == ErrorHandling.FAIL`)
 
         """
         if row and batch:
