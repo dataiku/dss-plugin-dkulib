@@ -98,6 +98,7 @@ class DataFrameParallelizer:
             raise ValueError("Please provide a valid batch_response_parser function")
         self.output_column_prefix = output_column_prefix
         self.verbose = verbose
+        self._output_column_names = None  # Will be set at runtime by the run method
 
     def _get_unique_output_column_names(self, existing_names: List[AnyStr]) -> NamedTuple:
         """Return a named tuple with prefixed column names and their descriptions"""
@@ -110,7 +111,7 @@ class DataFrameParallelizer:
         )
 
     def _apply_function_and_parse_response(
-        self, output_column_names: NamedTuple, row: Dict = None, batch: List[Dict] = None, **function_kwargs,
+        self, row: Dict = None, batch: List[Dict] = None, **function_kwargs,
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
         """Wrap a row-by-row or batch function with error logging and response parsing
 
@@ -124,7 +125,7 @@ class DataFrameParallelizer:
         if row and batch:
             raise (ValueError("Please use either row or batch as arguments, but not both"))
         output = deepcopy(row) if row else deepcopy(batch)
-        for output_column in output_column_names:
+        for output_column in self._output_column_names:
             if row:
                 output[output_column] = ""
             else:
@@ -135,13 +136,15 @@ class DataFrameParallelizer:
                 self.function(row=row, **function_kwargs) if row else self.function(batch=batch, **function_kwargs)
             )
             if row:
-                output[output_column_names.response] = response
+                output[self._output_column_names.response] = response
             else:
                 output = self.batch_response_parser(
-                    batch=batch, response=response, output_column_names=output_column_names
+                    batch=batch, response=response, output_column_names=self._output_column_names
                 )
                 errors = [
-                    row[output_column_names.error_message] for row in output if row[output_column_names.error_message]
+                    row[self._output_column_names.error_message]
+                    for row in output
+                    if row[self._output_column_names.error_message]
                 ]
                 if errors:
                     raise BatchError(str(errors))
@@ -156,33 +159,31 @@ class DataFrameParallelizer:
             if module:
                 error_type = f"{module.__name__}.{error_type}"
             if row:
-                output[output_column_names.error_message] = str(error)
-                output[output_column_names.error_type] = error_type
-                output[output_column_names.error_raw] = str(error.args)
+                output[self._output_column_names.error_message] = str(error)
+                output[self._output_column_names.error_type] = error_type
+                output[self._output_column_names.error_raw] = str(error.args)
             else:
                 for output_row in output:
-                    output_row[output_column_names.error_message] = str(error)
-                    output_row[output_column_names.error_type] = error_type
-                    output_row[output_column_names.error_raw] = str(error.args)
+                    output_row[self._output_column_names.error_message] = str(error)
+                    output_row[self._output_column_names.error_type] = error_type
+                    output_row[self._output_column_names.error_raw] = str(error.args)
         return output
 
-    def _convert_results_to_df(
-        self, df: pd.DataFrame, results: List[Dict], output_column_names: NamedTuple,
-    ) -> pd.DataFrame:
+    def _convert_results_to_df(self, df: pd.DataFrame, results: List[Dict]) -> pd.DataFrame:
         """Combine results from the function with the input dataframe"""
-        output_schema = {**{column_name: str for column_name in output_column_names}, **dict(df.dtypes)}
+        output_schema = {**{column_name: str for column_name in self._output_column_names}, **dict(df.dtypes)}
         output_df = (
             pd.DataFrame.from_records(results)
-            .reindex(columns=list(df.columns) + list(output_column_names))
+            .reindex(columns=list(df.columns) + list(self._output_column_names))
             .astype(output_schema)
         )
         if not self.verbose:
-            output_df.drop(labels=output_column_names.error_raw, axis=1, inplace=True)
+            output_df.drop(labels=self._output_column_names.error_raw, axis=1, inplace=True)
         if self.error_handling == ErrorHandling.FAIL:
             error_columns = [
-                output_column_names.error_message,
-                output_column_names.error_type,
-                output_column_names.error_raw,
+                self._output_column_names.error_message,
+                self._output_column_names.error_type,
+                self._output_column_names.error_raw,
             ]
             output_df.drop(labels=error_columns, axis=1, inplace=True, errors="ignore")
         return output_df
@@ -221,8 +222,8 @@ class DataFrameParallelizer:
         else:
             logging.info(f"Applying function {self.function.__name__} in parallel to {df_num_rows} row(s)...")
             len_generator = df_num_rows
-        output_column_names = self._get_unique_output_column_names(existing_names=df.columns)
-        pool_kwargs = {**{"output_column_names": output_column_names}, **function_kwargs.copy()}
+        self._output_column_names = self._get_unique_output_column_names(existing_names=df.columns)
+        pool_kwargs = function_kwargs.copy()
         for kwarg in ["function", "row", "batch"]:  # Reserved pool keyword arguments
             pool_kwargs.pop(kwarg, None)
         if not self.batch_support and "batch_response_parser" in pool_kwargs:
@@ -242,8 +243,8 @@ class DataFrameParallelizer:
             for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):
                 results.append(future.result())
         results = flatten(results) if self.batch_support else results
-        output_df = self._convert_results_to_df(df, results, output_column_names)
-        num_error = sum(output_df[output_column_names.response] == "")
+        output_df = self._convert_results_to_df(df, results)
+        num_error = sum(output_df[self._output_column_names.response] == "")
         num_success = len(df.index) - num_error
         logging.info(
             (
