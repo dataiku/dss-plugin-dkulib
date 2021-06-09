@@ -42,27 +42,40 @@ class DataFrameParallelizer:
         error_handling: If ErrorHandling.LOG (default), log the error from the function as a warning,
             and add additional columns to the dataframe with the error message and error type.
             If ErrorHandling.FAIL, the function will fail is there is any error.
-        exceptions_to_catch: Tuple of Exception classes to catch. Mandatory if ErrorHandling.LOG (default).
+            We recommend letting the end user choose as there are contexts which justify one option or the other.
+        exceptions_to_catch: Tuple of Exception classes to catch.
+            Mandatory if ErrorHandling.LOG (default).
         parallel_workers: Number of concurrent threads to parallelize the function. Default is 4.
+            We recommend letting the end user tune this parameter to get better performance.
         batch_support: If True, send batches of row (list of dict) to the `function`
-            Else (default) send rows as dict to the function
+            Else (default) send rows as dict to the function.
+            This parameter should be chosen according to the nature of the function to apply.
         batch_size: Number of rows to include in each batch. Default is 10.
             Taken into account if `batch_support` is True.
+            We recommend letting the end user tune this parameter if they need to increase performance.
         batch_response_parser: Function used to parse the raw response from the function in batch mode,
             and assign the actual responses and errors back to the original batch of row (list of dict).
             This is often required for batch APIs which return nested objects with a mix of responses and errors.
+            This parameter is required if batch_support is True.
         output_column_prefix: Column prefix to add to the output columns of the dataframe,
             containing the `function` responses and errors. Default is "output".
-        verbose: If True, log additional information on errors.
-            Else (default) log the error message and the error type.
+            This should be overriden by the developer: if the function to apply calls an API for text translation,
+            a good output_column_prefix would be "api_translation".
+        verbose: If True, log raw details on any error encountered along with the error message and error type.
+            Else (default) log only the error message and the error type.
+            We recommend trying without verbose first. Usually, the error message is enough to diagnose the issue.
 
     """
 
     DEFAULT_PARALLEL_WORKERS = 4
-    DEFAULT_BATCH_SIZE = 10
+    """Default number of worker threads to use in parallel - may be tuned by the end user"""
     DEFAULT_BATCH_SUPPORT = False
-    DEFAULT_VERBOSE = False
+    """By default, we assume the function to apply is row-by-row - should be overriden in the batch case"""
+    DEFAULT_BATCH_SIZE = 10
+    """Default number of rows in one batch - may be tuned by the end user"""
+
     DEFAULT_OUTPUT_COLUMN_PREFIX = "output"
+    """Default prefix to add to output columns - should be overriden for personalized output"""
     OUTPUT_COLUMN_NAME_DESCRIPTIONS = OrderedDict(
         [
             ("response", "Raw response in JSON format"),
@@ -72,6 +85,8 @@ class DataFrameParallelizer:
         ]
     )
     """Default dictionary of output column names (key) and their descriptions (value)"""
+    DEFAULT_VERBOSE = False
+    """By default, set verbose to False assuming error message and type are enough information in the logs"""
 
     def __init__(
         self,
