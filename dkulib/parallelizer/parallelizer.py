@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking"""
 
-import inspect, logging, math
+import logging
+import inspect
+import math
 
 from typing import Callable, AnyStr, Any, List, Tuple, NamedTuple, Dict, Union, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,7 +16,7 @@ import pandas as pd
 from more_itertools import chunked, flatten
 from tqdm.auto import tqdm as tqdm_auto
 
-from plugin_io_utils import generate_unique
+from dkulib.io_utils.plugin_io_utils import generate_unique
 
 class ErrorHandling(Enum):
     """Enum class to identify how to handle API errors"""
