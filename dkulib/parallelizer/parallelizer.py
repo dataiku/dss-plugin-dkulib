@@ -5,29 +5,47 @@ import logging
 import inspect
 import math
 
-from typing import Callable, AnyStr, Any, List, Tuple, NamedTuple, Dict, Union, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable
+from typing import AnyStr
+from typing import Any
+from typing import List
+from typing import Tuple
+from typing import NamedTuple
+from typing import Dict
+from typing import Union
+from typing import Optional
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from time import perf_counter
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
+from collections import OrderedDict
 from enum import Enum
 
 import pandas as pd
-from more_itertools import chunked, flatten
+from more_itertools import chunked
+from more_itertools import flatten
 from tqdm.auto import tqdm as tqdm_auto
 
 from dkulib.io_utils.plugin_io_utils import generate_unique
 
 class ErrorHandling(Enum):
     """Enum class to identify how to handle API errors"""
-
     LOG = "Log"
     FAIL = "Fail"
-
 
 class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
 
+def _parse_batch_response_default(batch, response, output_column_names):
+    """
+    Adds the response column to the row dictionary at batch[0], while keeping the 
+    existing dict entries. Should only be used when batch_size=1.
+    """
+    return  [{
+        output_column_names.response: response,
+        **batch[0]
+    }]
 
 class DataFrameParallelizer:
     """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking.
@@ -58,16 +76,15 @@ class DataFrameParallelizer:
             Else (default) log only the error message and the error type.
             We recommend trying without verbose first. Usually, the error message is enough to diagnose the issue.
     """
-
+    # Default number of worker threads to use in parallel - may be tuned by the end user
     DEFAULT_PARALLEL_WORKERS = 4
-    """Default number of worker threads to use in parallel - may be tuned by the end user"""
+    # Default number of rows in one batch - may be tuned by the end user
     DEFAULT_BATCH_SIZE = 1
-    """Default number of rows in one batch - may be tuned by the end user"""
-    DEFAULT_RESPONSE_PARSER = lambda batch, response, output_column_names: [dict({output_column_names.response: response}, **batch[0])]
-    """Default response parsing function for batch_size=1 - Simply assigns the response to the response column"""
-
+    # Default response parsing function for batch_size=1 - Simply assigns the response to the response column
+    DEFAULT_RESPONSE_PARSER = _parse_batch_response_default
+    # Default prefix to add to output columns - should be overriden for personalized output
     DEFAULT_OUTPUT_COLUMN_PREFIX = "output"
-    """Default prefix to add to output columns - should be overriden for personalized output"""
+    # Default dictionary of output column names (key) and their descriptions (value)
     OUTPUT_COLUMN_NAME_DESCRIPTIONS = OrderedDict(
         [
             ("response", "Raw response in JSON format"),
@@ -76,10 +93,9 @@ class DataFrameParallelizer:
             ("error_raw", "Raw error"),
         ]
     )
-    """Default dictionary of output column names (key) and their descriptions (value)"""
+    # By default, set verbose to False assuming error message and type are enough information in the logs
     DEFAULT_VERBOSE = False
-    """By default, set verbose to False assuming error message and type are enough information in the logs"""
-
+    
     def __init__(
         self,
         function: Callable[[Union[Dict, List[Dict]]], Union[Dict, List[Dict]]],
@@ -87,7 +103,7 @@ class DataFrameParallelizer:
         exceptions_to_catch: Tuple[Exception] = (),
         parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
         batch_size: int = DEFAULT_BATCH_SIZE,
-        batch_response_parser: Optional[Callable[[List[Dict], Any, NamedTuple], List[Dict]]] = DEFAULT_RESPONSE_PARSER,
+        batch_response_parser: Callable[[List[Dict], Any, NamedTuple], List[Dict]] = DEFAULT_RESPONSE_PARSER,
         output_column_prefix: AnyStr = DEFAULT_OUTPUT_COLUMN_PREFIX,
         verbose: bool = DEFAULT_VERBOSE,
     ):
@@ -118,16 +134,15 @@ class DataFrameParallelizer:
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
         """Wrap a batch function with error logging and response parsing
         It applies `self.function` and:
-        - Parse the function response to extract results and errors using `self.batch_response_parser`
+        - Parses the function response to extract results and errors using `self.batch_response_parser`
         - Handles errors from the function with two methods:
             * (default) log the error message as a warning and return the row with error keys
             * fail if there is an error (if `self.error_handling == ErrorHandling.FAIL`)
         """
         output = deepcopy(batch)
         for output_column in self._output_column_names:
-                for output_row in output:
-                    if output_column not in output_row:
-                        output_row[output_column] = ""
+            for output_row in output:
+                output_row[output_column] = ""
         try:
             response = (
                 self.function(batch=batch, **function_kwargs)
