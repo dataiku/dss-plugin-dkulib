@@ -144,8 +144,9 @@ class DataFrameParallelizer:
         self.batch_support = batch_support
         if batch_support is False:
             batch_size = 1
-            assert batch_response_parser == _parse_batch_response_default, "The default batch response parser " \
-                + "should be used when batch_support is False."
+            if batch_response_parser != _parse_batch_response_default:
+                raise ValueError("The default batch response parser "
+                                 + "should be used when batch_support is False.")
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
