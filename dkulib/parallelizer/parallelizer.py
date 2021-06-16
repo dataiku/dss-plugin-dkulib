@@ -48,6 +48,7 @@ def _parse_batch_response_default(batch: List[Dict],
         response: Response returned by the API, typically a JSON string
         output_column_names: Column names to be added to the row, 
             as defined in _get_unique_output_column_names
+
     Returns:
         batch: Same as input batch with additional columns 
             corresponding to the default output columns
@@ -62,7 +63,9 @@ def _parse_batch_response_default(batch: List[Dict],
 
 class DataFrameParallelizer:
     """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking.
+    
     This class is particularly well-suited for synchronous functions calling an API, either row-by-row or by batch.
+    
     Attributes:
         function: Any function taking a dict as input (row-by-row mode) or a list of dict (batch mode),
             and returning a response with additional information, typically a JSON string.
@@ -222,19 +225,23 @@ class DataFrameParallelizer:
         return output_df
 
     def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
-        """Apply a function to a pandas.DataFrame with parallelization, error logging and progress tracking
+        """Apply a function to a pandas.DataFrame with parallelization, error logging and progress tracking.
+        
         The DataFrame is iterated on and fed to the function as dictionaries, row-by-row or by batches of rows.
         This process is accelerated by the use of concurrent threads and is tracked with a progress bar.
         Errors are catched if they match the `self.exceptions_to_catch` attribute and automatically logged.
         Once the whole DataFrame has been iterated on, results and errors are added as additional columns.
+        
         Args:
             df: Input dataframe on which the function will be applied
             **function_kwargs: Arbitrary keyword arguments passed to the `function`
+
         Returns:
             Input dataframe with additional columns:
             - response from the `function`
             - error message if any
             - error type if any
+
         """
         # First, we create a generator expression to yield each row of the input dataframe.
         # Each row will be represented as a dictionary like {"column_name_1": "foo", "column_name_2": 42}
