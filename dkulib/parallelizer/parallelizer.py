@@ -37,23 +37,34 @@ class ErrorHandling(Enum):
 class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
 
-def _parse_batch_response_default(batch, response, output_column_names):
-    """
-    Adds the response column to the row dictionary at batch[0], while keeping the 
+def _parse_batch_response_default(batch: List[Dict], 
+                                response: Any, 
+                                output_column_names: NamedTuple):
+    """Adds the response column to the row dictionary at batch[0], while keeping the 
     existing dict entries. Should only be used when batch_size=1.
+
+    Args:
+        batch: Single input row from the dataframe as a dict in a list of length 1
+        response: Response returned by the API, typically a JSON string
+        output_column_names: Column names to be added to the row, as defined in _get_unique_output_column_names
+    Returns:
+        batch: Same as input batch with additional columns corresponding to the default output columns
     """
     return  [{
         output_column_names.response: response,
+        output_column_names.error_message: "",
+        output_column_names.error_type: "",
+        output_column_names.error_raw: "",
         **batch[0]
     }]
 
 class DataFrameParallelizer:
     """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking.
-    This class is particularly well-suited for synchronous functions calling an API, by batch.
+    This class is particularly well-suited for synchronous functions calling an API, either row-by-row or by batch.
     Attributes:
-        function: Any function taking a list of dicts as input to a batch keyword argument and returning a response with 
-            additional information, typically a JSON string. If batch_size=1, the row can just be extracted with batch[0].
-            The response from the function should be parsable by the `batch_response_parser` attribute.
+        function: Any function taking a dict as input (row-by-row mode) or a list of dict (batch mode),
+            and returning a response with additional information, typically a JSON string.
+            In batch mode, the response from the function should be parsable by the `batch_response_parser` attribute.
         error_handling: If ErrorHandling.LOG (default), log the error from the function as a warning,
             and add additional columns to the dataframe with the error message and error type.
             If ErrorHandling.FAIL, the function will fail is there is any error.
@@ -62,12 +73,16 @@ class DataFrameParallelizer:
             Mandatory if ErrorHandling.LOG (default).
         parallel_workers: Number of concurrent threads to parallelize the function. Default is 4.
             We recommend letting the end user tune this parameter to get better performance.
-        batch_size: Number of rows to process at once. Default is 1, i.e. function is applied to each row individually.
+        batch_support: If True, send batches of row (list of dict) to the `function`
+            Else (default) send rows as dict to the function.
+            This parameter should be chosen according to the nature of the function to apply.
+        batch_size: Number of rows to include in each batch. Default is 10.
+            Taken into account if `batch_support` is True.
             We recommend letting the end user tune this parameter if they need to increase performance.
-        batch_response_parser: Function used to parse the raw response from the function,
+        batch_response_parser: Function used to parse the raw response from the function in batch mode,
             and assign the actual responses and errors back to the original batch of row (list of dict).
-            Default is just the identity function, i.e. the function response is left unchanged.
             This is often required for batch APIs which return nested objects with a mix of responses and errors.
+            This parameter is required if batch_support is True.
         output_column_prefix: Column prefix to add to the output columns of the dataframe,
             containing the `function` responses and errors. Default is "output".
             This should be overriden by the developer: if the function to apply calls an API for text translation,
@@ -78,6 +93,8 @@ class DataFrameParallelizer:
     """
     # Default number of worker threads to use in parallel - may be tuned by the end user
     DEFAULT_PARALLEL_WORKERS = 4
+    # By default, we assume the function to apply is row-by-row - should be overriden in the batch case
+    DEFAULT_BATCH_SUPPORT = False
     # Default number of rows in one batch - may be tuned by the end user
     DEFAULT_BATCH_SIZE = 1
     # Default response parsing function for batch_size=1 - Simply assigns the response to the response column
@@ -102,6 +119,7 @@ class DataFrameParallelizer:
         error_handling: ErrorHandling = ErrorHandling.LOG,
         exceptions_to_catch: Tuple[Exception] = (),
         parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
+        batch_support: bool = DEFAULT_BATCH_SUPPORT,
         batch_size: int = DEFAULT_BATCH_SIZE,
         batch_response_parser: Callable[[List[Dict], Any, NamedTuple], List[Dict]] = DEFAULT_RESPONSE_PARSER,
         output_column_prefix: AnyStr = DEFAULT_OUTPUT_COLUMN_PREFIX,
@@ -113,6 +131,7 @@ class DataFrameParallelizer:
         if error_handling == ErrorHandling.LOG and not exceptions_to_catch:
             raise ValueError("Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
+        self.batch_support = batch_support
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
@@ -132,21 +151,24 @@ class DataFrameParallelizer:
     def _apply_function_and_parse_response(
         self, batch: List[Dict] = None, **function_kwargs,
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
-        """Wrap a batch function with error logging and response parsing
+        """Wrap a row-by-row or batch function with error logging and response parsing
         It applies `self.function` and:
-        - Parses the function response to extract results and errors using `self.batch_response_parser`
-        - Handles errors from the function with two methods:
+        - If batch, parse the function response to extract results and errors using `self.batch_response_parser`
+        - handles errors from the function with two methods:
             * (default) log the error message as a warning and return the row with error keys
             * fail if there is an error (if `self.error_handling == ErrorHandling.FAIL`)
         """
         output = deepcopy(batch)
-        for output_column in self._output_column_names:
-            for output_row in output:
-                output_row[output_column] = ""
         try:
-            response = (
-                self.function(batch=batch, **function_kwargs)
-            )
+            if self.batch_support is False:
+                # In the row-by-row case, there is only one element in the list as batch_size=1
+                response = (
+                    self.function(row=batch[0], **function_kwargs)
+                )
+            else:
+                response = (
+                    self.function(batch=batch, **function_kwargs)
+                )
             output = self.batch_response_parser(
                 batch=batch, response=response, output_column_names=self._output_column_names
             )
@@ -187,7 +209,7 @@ class DataFrameParallelizer:
 
     def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
         """Apply a function to a pandas.DataFrame with parallelization, error logging and progress tracking
-        The DataFrame is iterated on and fed to the function as dictionaries, by batches of rows.
+        The DataFrame is iterated on and fed to the function as dictionaries, row-by-row or by batches of rows.
         This process is accelerated by the use of concurrent threads and is tracked with a progress bar.
         Errors are catched if they match the `self.exceptions_to_catch` attribute and automatically logged.
         Once the whole DataFrame has been iterated on, results and errors are added as additional columns.
@@ -214,7 +236,7 @@ class DataFrameParallelizer:
         start = perf_counter()
         self._output_column_names = self._get_unique_output_column_names(existing_names=df.columns)
         pool_kwargs = function_kwargs.copy()
-        for kwarg in ["function", "batch"]:  # Reserved pool keyword arguments
+        for kwarg in ["function", "row", "batch"]:  # Reserved pool keyword arguments
             pool_kwargs.pop(kwarg, None)
         results = []
         with ThreadPoolExecutor(max_workers=self.parallel_workers) as pool:
