@@ -159,6 +159,9 @@ class DataFrameParallelizer:
             * fail if there is an error (if `self.error_handling == ErrorHandling.FAIL`)
         """
         output = deepcopy(batch)
+        for output_column in self._output_column_names:
+            for output_row in output:
+                output_row[output_column] = ""
         try:
             if self.batch_support is False:
                 # In the row-by-row case, there is only one element in the list as batch_size=1
