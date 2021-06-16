@@ -187,7 +187,7 @@ class DataFrameParallelizer:
                     for row in output
                     if row[self._output_column_names.error_message]
                 ]
-            if errors:
+            if errors and self.batch_support:
                 raise BatchError(str(errors))
         except self.exceptions_to_catch + (BatchError,) as error:
             if self.error_handling == ErrorHandling.FAIL:
