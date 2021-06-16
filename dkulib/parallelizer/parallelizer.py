@@ -37,8 +37,8 @@ class ErrorHandling(Enum):
 class BatchError(ValueError):
     """Custom exception raised if the Batch function fails"""
 
-def _parse_batch_response_default(batch: List[Dict], 
-                                response: Any, 
+def _parse_batch_response_default(batch: List[Dict],
+                                response: Any,
                                 output_column_names: NamedTuple):
     """Adds the response column to the row dictionary at batch[0], while keeping the 
     existing dict entries. Should only be used when batch_size=1.
@@ -46,9 +46,11 @@ def _parse_batch_response_default(batch: List[Dict],
     Args:
         batch: Single input row from the dataframe as a dict in a list of length 1
         response: Response returned by the API, typically a JSON string
-        output_column_names: Column names to be added to the row, as defined in _get_unique_output_column_names
+        output_column_names: Column names to be added to the row, 
+            as defined in _get_unique_output_column_names
     Returns:
-        batch: Same as input batch with additional columns corresponding to the default output columns
+        batch: Same as input batch with additional columns 
+            corresponding to the default output columns
     """
     return  [{
         output_column_names.response: response,
@@ -96,7 +98,7 @@ class DataFrameParallelizer:
     # By default, we assume the function to apply is row-by-row - should be overriden in the batch case
     DEFAULT_BATCH_SUPPORT = False
     # Default number of rows in one batch - may be tuned by the end user
-    DEFAULT_BATCH_SIZE = 1
+    DEFAULT_BATCH_SIZE = 10
     # Default response parsing function for batch_size=1 - Simply assigns the response to the response column
     DEFAULT_RESPONSE_PARSER = _parse_batch_response_default
     # Default prefix to add to output columns - should be overriden for personalized output
@@ -132,6 +134,8 @@ class DataFrameParallelizer:
             raise ValueError("Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
+        if batch_support is False:
+            batch_size = 1
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
@@ -175,6 +179,13 @@ class DataFrameParallelizer:
             output = self.batch_response_parser(
                 batch=batch, response=response, output_column_names=self._output_column_names
             )
+            errors = [
+                    row[self._output_column_names.error_message]
+                    for row in output
+                    if row[self._output_column_names.error_message]
+                ]
+            if errors:
+                raise BatchError(str(errors))
         except self.exceptions_to_catch + (BatchError,) as error:
             if self.error_handling == ErrorHandling.FAIL:
                 raise error
