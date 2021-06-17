@@ -180,7 +180,7 @@ class DataFrameParallelizer:
             for output_row in output:
                 output_row[output_column] = ""
         try:
-            if self.batch_support is False:
+            if not self.batch_support:
                 # In the row-by-row case, there is only one element in the list as batch_size=1
                 response = (
                     self.function(row=batch[0], **function_kwargs)
