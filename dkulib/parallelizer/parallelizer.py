@@ -143,10 +143,10 @@ class DataFrameParallelizer:
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
         if batch_support is False:
+            # Overwrite necessary args for row-by-row iteration
             batch_size = 1
-            if batch_response_parser != _parse_batch_response_default:
-                raise ValueError("The default batch response parser "
-                                 + "should be used when batch_support is False.")
+            batch_response_parser = _parse_batch_response_default
+            
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
