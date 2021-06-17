@@ -42,7 +42,7 @@ class BatchError(ValueError):
 
 def _parse_batch_response_default(batch: List[Dict],
                                   response: Any,
-                                  output_column_names: NamedTuple):
+                                  output_column_names: NamedTuple) -> List[Dict]:
     """Adds the response column to the row dictionary at batch[0], while keeping the 
     existing dict entries. Should only be used when batch_size=1.
 
