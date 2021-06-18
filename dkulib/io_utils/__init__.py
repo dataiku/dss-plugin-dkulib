@@ -7,4 +7,4 @@
 # Author: Dataiku (Alex Combessie)
 #########################################################
 
-from .plugin_io_utils import *
+from .plugin_io_utils import *  # noqa
