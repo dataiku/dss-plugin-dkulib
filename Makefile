@@ -21,7 +21,6 @@ test-one:
 
 test-all:
 	@echo "[START] Running all unit tests..."
-	$(MAKE) nlp-setup
 	@for module in $(modules) ; do \
 		$(MAKE) module=$${module} test-one; \
 	done
