@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ERROR_MESSAGES = {
     'exists': 'This field is required.',
-    'in': 'Expected keys are: {op}.',
-    'not_in': 'Should not be in the following iterable: {op}.',
+    'in': 'Should be in {op}. (Currently {value})',
+    'not_in': 'Should not be in {op}. (Currently {value})',
     'eq': 'Should be equal to {op} (Currently {value}).',
     'sup': 'Should be greater than {op} (Currently {value}).',
     'sup_eq': 'Should be greater than or equal to {op} (Currently {value}).',
@@ -18,7 +18,8 @@ DEFAULT_ERROR_MESSAGES = {
     'is_type': 'Should be of type <class \'{op}\'> (Currently {value_type}).',
     'is_castable': 'Should be castable to type {op}> (Currently {value} with type {value_type}.',
     'custom': "There has been an unknown error.",
-    'match': "Should match the following pattern: {op}."
+    'match': "Should match the following pattern: {op}.",
+    'is_subset': 'Should be a subset of {op}. (Currently {value})',
 }
 
 
@@ -235,7 +236,7 @@ class CustomCheck:
         except (TypeError, ValueError):
             return False
 
-    def _custom(self, _) -> bool:
+    def _custom(self, *args) -> bool:
         """Checks whether "op" attribute is true or false
 
         Returns:
@@ -243,10 +244,18 @@ class CustomCheck:
         """
         return self.op
 
-    def _match(self, value) -> bool:
+    def _match(self, value: Any) -> bool:
         """Checks whether "value" matches the regex provided in "op" attribute
 
         Returns:
             bool: Whether the check has succeed
         """
         return not not re.match(self.op, value)
+
+    def _is_subset(self, value: Any) -> bool:
+        """Checks whether "value" is a subset of "op"
+
+        Returns:
+            bool: Whether the check has succeed
+        """
+        return all(v in self.op for v in value)
