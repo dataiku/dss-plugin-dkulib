@@ -258,4 +258,4 @@ class CustomCheck:
         Returns:
             bool: Whether the check has succeed
         """
-        return all(v in self.op for v in value)
+        return set(value).issubset(set(self.op))

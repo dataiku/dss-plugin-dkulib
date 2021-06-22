@@ -204,3 +204,22 @@ class TestCustomCheck:
             _ = custom_check_match.run('abc')
         with pytest.raises(CustomCheckError):
             _ = custom_check_match.run('3.8')
+
+    def test_is_subset(self):
+        custom_check_match = CustomCheck(
+            type='is_subset',
+            op=[1, 2, 3, "abc"]
+        )
+        assert custom_check_match.run([1, 2]) is None
+        assert custom_check_match.run([1, 1, 2]) is None
+        assert custom_check_match.run([]) is None
+        assert custom_check_match.run(["abc"]) is None
+        with pytest.raises(CustomCheckError):
+            _ = custom_check_match.run(["cde"])
+
+        custom_check_match = CustomCheck(
+            type='is_subset',
+            op=["a", "b", "c"]
+        )
+        assert custom_check_match.run("ab") is None
+        assert custom_check_match.run({"a", "b"}) is None
