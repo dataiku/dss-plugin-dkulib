@@ -154,7 +154,7 @@ class DataFrameParallelizer:
         self._output_column_names = None  # Will be set at runtime by the run method
 
     def _get_unique_output_column_names(self, existing_names: List[AnyStr]) -> NamedTuple:
-        """Return a named tuple with prefixed column names and their descriptions"""
+        """Returns a named tuple with prefixed column names and their descriptions"""
         OutputColumnNameTuple = namedtuple(
             "OutputColumnNameTuple", self.OUTPUT_COLUMN_NAME_DESCRIPTIONS.keys())
         return OutputColumnNameTuple(
