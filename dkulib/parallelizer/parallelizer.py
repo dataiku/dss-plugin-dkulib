@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking"""
+"""Applies a function to a pandas DataFrame with parallelization, error logging and progress tracking"""
 
 import logging
 import inspect
@@ -66,7 +66,7 @@ def _parse_batch_response_default(batch: List[Dict],
 
 
 class DataFrameParallelizer:
-    """Apply a function to a pandas DataFrame with parallelization, error logging and progress tracking.
+    """Applies a function to a pandas DataFrame with parallelization, error logging and progress tracking.
 
     This class is particularly well-suited for synchronous functions calling an API, either row-by-row or by batch.
 
@@ -168,7 +168,7 @@ class DataFrameParallelizer:
     def _apply_function_and_parse_response(
         self, batch: List[Dict] = None, **function_kwargs,
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
-        """Wrap a row-by-row or batch function with error logging and response parsing
+        """Wraps a row-by-row or batch function with error logging and response parsing
         It applies `self.function` and:
         - If batch, parse the function response to extract results and errors using `self.batch_response_parser`
         - handles errors from the function with two methods:
@@ -218,7 +218,7 @@ class DataFrameParallelizer:
         return output
 
     def _convert_results_to_df(self, df: pd.DataFrame, results: List[Dict]) -> pd.DataFrame:
-        """Combine results from the function with the input dataframe"""
+        """Combines results from the function with the input dataframe"""
         output_schema = {
             **{column_name: str for column_name in self._output_column_names}, **dict(df.dtypes)}
         output_df = (
@@ -240,7 +240,7 @@ class DataFrameParallelizer:
         return output_df
 
     def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
-        """Apply a function to a pandas.DataFrame with parallelization, error logging and progress tracking.
+        """Applies a function to a pandas.DataFrame with parallelization, error logging and progress tracking.
 
         The DataFrame is iterated on and fed to the function as dictionaries, row-by-row or by batches of rows.
         This process is accelerated by the use of concurrent threads and is tracked with a progress bar.

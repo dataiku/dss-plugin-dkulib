@@ -47,7 +47,7 @@ class APICaseEnum(Enum):
 
 
 def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
-    """Call a mock API which works row-by-row"""
+    """Calls a mock API which works row-by-row"""
     test_case = row.get(INPUT_COLUMN)
     response = {}
     if test_case == APICaseEnum.SUCCESS:
@@ -63,7 +63,7 @@ def call_mock_api(row: Dict, api_function_param: int = 42) -> AnyStr:
 
 
 def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyStr:
-    """Call a mock API which works by batches of rows"""
+    """Calls a mock API which works by batches of rows"""
     batch_response = []
     for row in batch:
         test_case = row.get(INPUT_COLUMN)
@@ -82,7 +82,7 @@ def call_mock_api_batch(batch: List[Dict], api_function_param: int = 42) -> AnyS
 
 
 def batch_response_parser(batch: List[Dict], response: List, output_column_names: NamedTuple) -> List[Dict]:
-    """Parse the response of `call_mock_api_batch` into a clean list of dict"""
+    """Parses the response of `call_mock_api_batch` into a clean list of dict"""
     output_batch = deepcopy(batch)
     for i in range(len(response)):
         output_batch[i][output_column_names.response] = json.dumps(response[i]) if response[i] else ""
@@ -94,7 +94,7 @@ def batch_response_parser(batch: List[Dict], response: List, output_column_names
 
 @pytest.mark.parametrize("error_handling", [ErrorHandling.LOG, ErrorHandling.FAIL])
 def test_api_success(error_handling):
-    """Test the parallelizer logging system in case the mock API function returns successfully"""
+    """Tests the parallelizer logging system in case the mock API function returns successfully"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.SUCCESS]})
     parallelizer = DataFrameParallelizer(
         function=call_mock_api, error_handling=error_handling, exceptions_to_catch=API_EXCEPTIONS
@@ -112,7 +112,7 @@ def test_api_success(error_handling):
 
 
 def test_api_failure():
-    """Test the parallelizer logging system in case the mock API function raises an URLError"""
+    """Tests the parallelizer logging system in case the mock API function raises an URLError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.API_FAILURE]})
     parallelizer = DataFrameParallelizer(function=call_mock_api, exceptions_to_catch=API_EXCEPTIONS)
     output_df = parallelizer.run(input_df)
@@ -123,7 +123,7 @@ def test_api_failure():
 
 
 def test_invalid_input():
-    """Test the parallelizer logging system in case the mock API function raises a ValueError"""
+    """Tests the parallelizer logging system in case the mock API function raises a ValueError"""
     input_df = pd.DataFrame({INPUT_COLUMN: [APICaseEnum.INVALID_INPUT]})
     parallelizer = DataFrameParallelizer(function=call_mock_api, exceptions_to_catch=API_EXCEPTIONS)
     output_df = parallelizer.run(input_df, api_function_param="invalid_integer")
@@ -134,7 +134,7 @@ def test_invalid_input():
 
 
 def test_batch_api():
-    """Test the parallelizer logging system in batch mode for the three cases above"""
+    """Tests the parallelizer logging system in batch mode for the three cases above"""
     batch_size = 3
     input_df = pd.DataFrame(
         {
