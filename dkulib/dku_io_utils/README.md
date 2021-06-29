@@ -32,7 +32,7 @@ set_column_descriptions(
 
 Don't hesitate to check these plugins using the library for more examples:
 - [dss-plugin-nlp-preparation](https://github.com/dataiku/dss-plugin-nlp-preparation/blob/main/custom-recipes/nlp-preparation-cleaning/recipe.py)
-- [dss-plugin-nlp-preparation](https://github.com/dataiku/dss-plugin-nlp-preparation/blob/main/custom-recipes/nlp-preparation-cleaning/recipe.py)
+- [dss-plugin-similarity-search](https://github.com/dataiku/dss-plugin-similarity-search/blob/main/custom-recipes/similarity-search-query/recipe.py)
 
 ## Version
 
