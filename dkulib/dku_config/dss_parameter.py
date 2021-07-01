@@ -21,8 +21,9 @@ class DSSParameter:
         required(bool, optional): Whether the value can be None
         cast_to(type, optional): The type to cast the variable in
         cast_to(Any, optional): The default value of the variable (If value is None)
+        label(str, optional): The name displayed to the end user
     """
-    def __init__(self, name: str, value: Any, checks: List[dict] = None, required: bool = False, cast_to: type = None, default: Any = None):
+    def __init__(self, name: str, value: Any, checks: List[dict] = None, required: bool = False, cast_to: type = None, default: Any = None, label: str = None,):
         """Initialization method for the DSSParameter class
 
         Args:
@@ -32,6 +33,7 @@ class DSSParameter:
             required(bool, optional): Whether the value can be None
             cast_to(type, optional): The type to cast the variable in
             default(Any, optional): The default value of the variable (If value is None)
+            label(str, optional): The name displayed to the end user
         """
         if checks is None:
             checks = []
@@ -40,6 +42,10 @@ class DSSParameter:
         self.required = required
         self.cast_to = cast_to
         self.checks = [CustomCheck(**check) for check in checks]
+        if label is None:
+            self.label = name
+        else:
+            self.label = label
 
         value_exists = self.run_checks([CustomCheck(type='exists')], raise_error=self.required)
         if value_exists:
@@ -101,7 +107,7 @@ class DSSParameter:
         Validation error with parameter \"{name}\":
         {error}
         """.format(
-            name=self.name,
+            name=self.label,
             error=error
         )
 
