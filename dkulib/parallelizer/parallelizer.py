@@ -260,10 +260,9 @@ class DataFrameParallelizer:
                             for index_series_pair in df.iterrows())
         # We then chunk the generator into lists of rows of len batch_size
         df_row_batch_generator = chunked(df_row_generator, self.batch_size)
-        df_num_rows = len(df.index)
-        len_generator = math.ceil(df_num_rows / self.batch_size)
+        len_generator = math.ceil(len(df.index) / self.batch_size)
         logging.info(
-            f"Applying function {self.function.__name__} in parallel to {df_num_rows} row(s)"
+            f"Applying function {self.function.__name__} in parallel to {len(df.index)} row(s)"
             + f" using batch size of {self.batch_size}..."
         )
         start = perf_counter()
