@@ -18,7 +18,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import NamedTuple
-from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -43,17 +42,17 @@ class BatchError(ValueError):
 def _parse_batch_response_default(batch: List[Dict],
                                   response: Any,
                                   output_column_names: NamedTuple) -> List[Dict]:
-    """Adds the response column to the row dictionary at batch[0], while keeping the 
+    """Adds the response column to the row dictionary at batch[0], while keeping the
     existing dict entries. Should only be used when batch_size=1.
 
     Args:
         batch: Single input row from the dataframe as a dict in a list of length 1
         response: Response returned by the API, typically a JSON string
-        output_column_names: Column names to be added to the row, 
+        output_column_names: Column names to be added to the row,
             as defined in _get_unique_output_column_names
 
     Returns:
-        batch: Same as input batch with additional columns 
+        batch: Same as input batch with additional columns
             corresponding to the default output columns
     """
     return [{
@@ -146,7 +145,6 @@ class DataFrameParallelizer:
             # Overwrite necessary args for row-by-row iteration
             batch_size = 1
             batch_response_parser = _parse_batch_response_default
-            
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
@@ -221,11 +219,9 @@ class DataFrameParallelizer:
         """Combines results from the function with the input dataframe"""
         output_schema = {
             **{column_name: str for column_name in self._output_column_names}, **dict(df.dtypes)}
-        output_df = (
-            pd.DataFrame.from_records(results)
-            .reindex(columns=list(df.columns) + list(self._output_column_names))
+        output_df = pd.DataFrame.from_records(results) \
+            .reindex(columns=list(df.columns) + list(self._output_column_names)) \
             .astype(output_schema)
-        )
         if not self.verbose:
             output_df.drop(
                 labels=self._output_column_names.error_raw, axis=1, inplace=True)
