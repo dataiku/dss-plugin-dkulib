@@ -150,7 +150,6 @@ class DataFrameParallelizer:
         if not batch_support:
             # Overwrite batch_size if no batch_support
             batch_size = 1
-
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
@@ -223,10 +222,11 @@ class DataFrameParallelizer:
                 output_row[self._output_column_names.error_raw] = str(error.args)
         return output
 
-    def _convert_results_to_df(
+    def _post_process_results(
         self, df: pd.DataFrame, results: List[Dict]
     ) -> pd.DataFrame:
         """Combines results from the function with the input dataframe"""
+        results = flatten(results)
         output_schema = {
             **{column_name: str for column_name in self._output_column_names},
             **dict(df.dtypes),
@@ -247,6 +247,12 @@ class DataFrameParallelizer:
                 self._output_column_names.error_raw,
             ]
             output_df.drop(labels=error_columns, axis=1, inplace=True, errors="ignore")
+        num_error = sum(output_df[self._output_column_names.response] == "")
+        num_success = len(df.index) - num_error
+        logging.info(
+            f"Applying function {self.function.__name__} in parallel to {len(df.index)} row(s): "
+            + f"{num_success} row(s) succeeded, {num_error} failed."
+        )
         return output_df
 
     def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
@@ -301,14 +307,6 @@ class DataFrameParallelizer:
                 as_completed(futures), total=len_generator, miniters=1, mininterval=1.0
             ):
                 results.append(future.result())
-        results = flatten(results)
-        output_df = self._convert_results_to_df(df, results)
-        num_error = sum(output_df[self._output_column_names.response] == "")
-        num_success = len(df.index) - num_error
-        logging.info(
-            (
-                f"Applied function in parallel: {num_success} row(s) succeeded, {num_error} failed "
-                f"in {(perf_counter() - start):.2f} seconds."
-            )
-        )
+        output_df = self._post_process_results(df, results)
+        logging.info(f"Parallelization done in {(perf_counter() - start):.2f} seconds.")
         return output_df
