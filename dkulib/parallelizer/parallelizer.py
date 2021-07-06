@@ -141,10 +141,8 @@ class DataFrameParallelizer:
                 "Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
-        if not batch_support:
-            # Overwrite necessary args for row-by-row iteration
+        if not batch_support:  # Overwrite necessary args for row-by-row iteration
             batch_size = 1
-            batch_response_parser = _parse_batch_response_default
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
