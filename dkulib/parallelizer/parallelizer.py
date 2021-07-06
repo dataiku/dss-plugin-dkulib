@@ -41,14 +41,14 @@ class BatchError(ValueError):
 
 
 def _parse_batch_response_default(
-    batch: List[Dict], response: Any, output_column_names: NamedTuple
+    batch: List[Dict], response: List[Any], output_column_names: NamedTuple
 ) -> List[Dict]:
     """Adds the response column to the row dictionary at batch[0], while keeping the
     existing dict entries. Should only be used when batch_size=1.
 
     Args:
         batch: Single input row from the dataframe as a dict in a list of length 1
-        response: Response returned by the API, typically a JSON string
+        response: List of one or more responses returned by the API, typically a JSON string
         output_column_names: Column names to be added to the row,
             as defined in _get_unique_output_column_names
 
@@ -58,12 +58,13 @@ def _parse_batch_response_default(
     """
     return [
         {
-            output_column_names.response: response,
+            output_column_names.response: resp,
             output_column_names.error_message: "",
             output_column_names.error_type: "",
             output_column_names.error_raw: "",
-            **batch[0],
+            **row,
         }
+        for resp, row in zip(response, batch)
     ]
 
 
@@ -74,8 +75,8 @@ class DataFrameParallelizer:
 
     Attributes:
         function: Any function taking a dict as input (row-by-row mode) or a list of dict (batch mode),
-            and returning a response with additional information, typically a JSON string.
-            In batch mode, the response from the function should be parsable by the `batch_response_parser` attribute.
+            and returning a response with additional information, typically a JSON string. In batch mode, 
+            the function is expected to return a list of responses for each row if 'DEFAULT_RESPONSE_PARSER' is used.
         error_handling: If ErrorHandling.LOG (default), log the error from the function as a warning,
             and add additional columns to the dataframe with the error message and error type.
             If ErrorHandling.FAIL, the function will fail is there is any error.
@@ -146,8 +147,10 @@ class DataFrameParallelizer:
             raise ValueError("Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
-        if not batch_support:  # Overwrite necessary args for row-by-row iteration
+        if not batch_support:
+            # Overwrite batch_size if no batch_support
             batch_size = 1
+
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
@@ -189,7 +192,9 @@ class DataFrameParallelizer:
         try:
             if not self.batch_support:
                 # In the row-by-row case, there is only one element in the list as batch_size=1
-                response = self.function(row=batch[0], **function_kwargs)
+                response = [(
+                    self.function(row=batch[0], **function_kwargs)
+                )]
             else:
                 response = self.function(batch=batch, **function_kwargs)
             output = self.batch_response_parser(
