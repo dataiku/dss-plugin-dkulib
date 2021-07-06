@@ -58,13 +58,13 @@ def _parse_batch_response_default(
     """
     return [
         {
-            output_column_names.response: resp,
+            output_column_names.response: response,
             output_column_names.error_message: "",
             output_column_names.error_type: "",
             output_column_names.error_raw: "",
             **row,
         }
-        for resp, row in zip(response, batch)
+        for response, row in zip(response, batch)
     ]
 
 
@@ -174,12 +174,18 @@ class DataFrameParallelizer:
             ]
         )
 
-    def _apply_function_and_parse_response(
+    def _apply_function_with_error_logging(
         self, batch: List[Dict] = None, **function_kwargs,
     ) -> Union[Dict, List[Dict]]:  # sourcery skip: or-if-exp-identity
-        """Wraps a row-by-row or batch function with error logging and response parsing
+        """Wraps a row-by-row or batch function with error logging
         It applies `self.function` and:
         - If batch, parse the function response to extract results and errors using `self.batch_response_parser`
+            Else, in the row-by-row case, the batch only contains one row.
+            We thus use the `_parse_batch_response_default` function, which simply assigns the function response
+            to a new key in the dictionary, without parsing errors from the response.
+            Parsing the function response to extract errors is only required for batch functions,
+            as most batch APIs return succesful responses (and make users pay for the request)
+            even if all rows within the batch failed from a functional perspective.
         - handles errors from the function with two methods:
             * (default) log the error message as a warning and return the row with error keys
             * fail if there is an error (if `self.error_handling == ErrorHandling.FAIL`)
@@ -298,7 +304,7 @@ class DataFrameParallelizer:
             for batch in df_row_batch_generator:
                 futures.append(
                     pool.submit(
-                        fn=self._apply_function_and_parse_response,
+                        fn=self._apply_function_with_error_logging,
                         batch=batch,
                         **pool_kwargs,
                     )
