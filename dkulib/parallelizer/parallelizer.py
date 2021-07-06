@@ -18,7 +18,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import NamedTuple
-from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -32,6 +31,7 @@ from dkulib.io_utils.plugin_io_utils import generate_unique
 
 class ErrorHandling(Enum):
     """Enum class to identify how to handle API errors"""
+
     LOG = "Log"
     FAIL = "Fail"
 
@@ -103,6 +103,7 @@ class DataFrameParallelizer:
             Else (default) log only the error message and the error type.
             We recommend trying without verbose first. Usually, the error message is enough to diagnose the issue.
     """
+
     # Default number of worker threads to use in parallel - may be tuned by the end user
     DEFAULT_PARALLEL_WORKERS = 4
     # By default, we assume the function to apply is row-by-row - should be overriden in the batch case
@@ -133,7 +134,9 @@ class DataFrameParallelizer:
         parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
         batch_support: bool = DEFAULT_BATCH_SUPPORT,
         batch_size: int = DEFAULT_BATCH_SIZE,
-        batch_response_parser: Callable[[List[Dict], Any, NamedTuple], List[Dict]] = DEFAULT_RESPONSE_PARSER,
+        batch_response_parser: Callable[
+            [List[Dict], Any, NamedTuple], List[Dict]
+        ] = DEFAULT_RESPONSE_PARSER,
         output_column_prefix: AnyStr = DEFAULT_OUTPUT_COLUMN_PREFIX,
         verbose: bool = DEFAULT_VERBOSE,
     ):
@@ -141,28 +144,33 @@ class DataFrameParallelizer:
         self.error_handling = error_handling
         self.exceptions_to_catch = exceptions_to_catch
         if error_handling == ErrorHandling.LOG and not exceptions_to_catch:
-            raise ValueError(
-                "Please set at least one exception in exceptions_to_catch")
+            raise ValueError("Please set at least one exception in exceptions_to_catch")
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
         if not batch_support:
             # Overwrite batch_size if no batch_support
             batch_size = 1
-            
+
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
         self.output_column_prefix = output_column_prefix
         self.verbose = verbose
         self._output_column_names = None  # Will be set at runtime by the run method
 
-    def _get_unique_output_column_names(self, existing_names: List[AnyStr]) -> NamedTuple:
+    def _get_unique_output_column_names(
+        self, existing_names: List[AnyStr]
+    ) -> NamedTuple:
         """Returns a named tuple with prefixed column names and their descriptions"""
         OutputColumnNameTuple = namedtuple(
-            "OutputColumnNameTuple", self.OUTPUT_COLUMN_NAME_DESCRIPTIONS.keys())
+            "OutputColumnNameTuple", self.OUTPUT_COLUMN_NAME_DESCRIPTIONS.keys()
+        )
         return OutputColumnNameTuple(
             *[
                 generate_unique(
-                    name=column_name, existing_names=existing_names, prefix=self.output_column_prefix)
+                    name=column_name,
+                    existing_names=existing_names,
+                    prefix=self.output_column_prefix,
+                )
                 for column_name in OutputColumnNameTuple._fields
             ]
         )
@@ -188,11 +196,11 @@ class DataFrameParallelizer:
                     self.function(row=batch[0], **function_kwargs)
                 )]
             else:
-                response = (
-                    self.function(batch=batch, **function_kwargs)
-                )
+                response = self.function(batch=batch, **function_kwargs)
             output = self.batch_response_parser(
-                batch=batch, response=response, output_column_names=self._output_column_names
+                batch=batch,
+                response=response,
+                output_column_names=self._output_column_names,
             )
             errors = [
                 row[self._output_column_names.error_message]
@@ -212,17 +220,19 @@ class DataFrameParallelizer:
             if module:
                 error_type = f"{module.__name__}.{error_type}"
             for output_row in output:
-                output_row[self._output_column_names.error_message] = str(
-                    error)
+                output_row[self._output_column_names.error_message] = str(error)
                 output_row[self._output_column_names.error_type] = error_type
-                output_row[self._output_column_names.error_raw] = str(
-                    error.args)
+                output_row[self._output_column_names.error_raw] = str(error.args)
         return output
 
-    def _convert_results_to_df(self, df: pd.DataFrame, results: List[Dict]) -> pd.DataFrame:
+    def _convert_results_to_df(
+        self, df: pd.DataFrame, results: List[Dict]
+    ) -> pd.DataFrame:
         """Combines results from the function with the input dataframe"""
         output_schema = {
-            **{column_name: str for column_name in self._output_column_names}, **dict(df.dtypes)}
+            **{column_name: str for column_name in self._output_column_names},
+            **dict(df.dtypes),
+        }
         output_df = (
             pd.DataFrame.from_records(results)
             .reindex(columns=list(df.columns) + list(self._output_column_names))
@@ -230,15 +240,15 @@ class DataFrameParallelizer:
         )
         if not self.verbose:
             output_df.drop(
-                labels=self._output_column_names.error_raw, axis=1, inplace=True)
+                labels=self._output_column_names.error_raw, axis=1, inplace=True
+            )
         if self.error_handling == ErrorHandling.FAIL:
             error_columns = [
                 self._output_column_names.error_message,
                 self._output_column_names.error_type,
                 self._output_column_names.error_raw,
             ]
-            output_df.drop(labels=error_columns, axis=1,
-                           inplace=True, errors="ignore")
+            output_df.drop(labels=error_columns, axis=1, inplace=True, errors="ignore")
         return output_df
 
     def run(self, df: pd.DataFrame, **function_kwargs,) -> pd.DataFrame:
@@ -262,30 +272,36 @@ class DataFrameParallelizer:
         """
         # First, we create a generator expression to yield each row of the input dataframe.
         # Each row will be represented as a dictionary like {"column_name_1": "foo", "column_name_2": 42}
-        df_row_generator = (index_series_pair[1].to_dict()
-                            for index_series_pair in df.iterrows())
+        df_row_generator = (
+            index_series_pair[1].to_dict() for index_series_pair in df.iterrows()
+        )
         # We then chunk the generator into lists of rows of len batch_size
         df_row_batch_generator = chunked(df_row_generator, self.batch_size)
-        df_num_rows = len(df.index)
-        len_generator = math.ceil(df_num_rows / self.batch_size)
+        len_generator = math.ceil(len(df.index) / self.batch_size)
         logging.info(
-            f"Applying function {self.function.__name__} in parallel to {df_num_rows} row(s)"
+            f"Applying function {self.function.__name__} in parallel to {len(df.index)} row(s)"
             + f" using batch size of {self.batch_size}..."
         )
         start = perf_counter()
         self._output_column_names = self._get_unique_output_column_names(
-            existing_names=df.columns)
+            existing_names=df.columns
+        )
         pool_kwargs = function_kwargs.copy()
         for kwarg in ["function", "row", "batch"]:  # Reserved pool keyword arguments
             pool_kwargs.pop(kwarg, None)
-        results = []
+        (futures, results) = ([], [])
         with ThreadPoolExecutor(max_workers=self.parallel_workers) as pool:
-            futures = [
-                pool.submit(self._apply_function_and_parse_response,
-                            batch=batch, **pool_kwargs)
-                for batch in df_row_batch_generator
-            ]
-            for future in tqdm_auto(as_completed(futures), total=len_generator, miniters=1, mininterval=1.0):
+            for batch in df_row_batch_generator:
+                futures.append(
+                    pool.submit(
+                        fn=self._apply_function_and_parse_response,
+                        batch=batch,
+                        **pool_kwargs,
+                    )
+                )
+            for future in tqdm_auto(
+                as_completed(futures), total=len_generator, miniters=1, mininterval=1.0
+            ):
                 results.append(future.result())
         results = flatten(results)
         output_df = self._convert_results_to_df(df, results)
