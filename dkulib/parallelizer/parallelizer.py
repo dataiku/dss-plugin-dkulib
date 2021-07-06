@@ -284,14 +284,16 @@ class DataFrameParallelizer:
         pool_kwargs = function_kwargs.copy()
         for kwarg in ["function", "row", "batch"]:  # Reserved pool keyword arguments
             pool_kwargs.pop(kwarg, None)
-        results = []
+        (futures, results) = ([], [])
         with ThreadPoolExecutor(max_workers=self.parallel_workers) as pool:
-            futures = [
-                pool.submit(
-                    self._apply_function_and_parse_response, batch=batch, **pool_kwargs
+            for batch in df_row_batch_generator:
+                futures.append(
+                    pool.submit(
+                        fn=self._apply_function_and_parse_response,
+                        batch=batch,
+                        **pool_kwargs,
+                    )
                 )
-                for batch in df_row_batch_generator
-            ]
             for future in tqdm_auto(
                 as_completed(futures), total=len_generator, miniters=1, mininterval=1.0
             ):
