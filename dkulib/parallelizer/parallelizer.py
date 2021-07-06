@@ -75,7 +75,7 @@ class DataFrameParallelizer:
 
     Attributes:
         function: Any function taking a dict as input (row-by-row mode) or a list of dict (batch mode),
-            and returning a response with additional information, typically a JSON string. In batch mode, 
+            and returning a response with additional information, typically a JSON string. In batch mode,
             the function is expected to return a list of responses for each row if 'DEFAULT_RESPONSE_PARSER' is used.
         error_handling: If ErrorHandling.LOG (default), log the error from the function as a warning,
             and add additional columns to the dataframe with the error message and error type.
@@ -192,9 +192,7 @@ class DataFrameParallelizer:
         try:
             if not self.batch_support:
                 # In the row-by-row case, there is only one element in the list as batch_size=1
-                response = [(
-                    self.function(row=batch[0], **function_kwargs)
-                )]
+                response = [(self.function(row=batch[0], **function_kwargs))]
             else:
                 response = self.function(batch=batch, **function_kwargs)
             output = self.batch_response_parser(
