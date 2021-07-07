@@ -11,7 +11,7 @@ import dataiku
 
 
 def count_records(dataset: dataiku.Dataset) -> int:
-    """Count the number of records of a dataset using the Dataiku dataset metrics API
+    """Counts the number of records of a dataset using the Dataiku dataset metrics API
 
     Args:
         dataset: dataiku.Dataset instance
@@ -45,7 +45,7 @@ def count_records(dataset: dataiku.Dataset) -> int:
 def process_dataset_chunks(
     input_dataset: dataiku.Dataset, output_dataset: dataiku.Dataset, func: Callable, chunksize: float = 1000, **kwargs
 ) -> None:
-    """Read a dataset by chunks, process each dataframe chunk with a function and write back to another dataset.
+    """Reads a dataset by chunks, process each dataframe chunk with a function and write back to another dataset.
 
     Pass keyword arguments to the function, adds a tqdm progress bar and generic logging.
     Directly write chunks to the output_dataset, so that only one chunk needs to be processed in-memory at a time.
