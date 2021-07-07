@@ -3,7 +3,7 @@
 
 # For more information, see https://github.com/dataiku/dss-plugin-dkulib/tree/main/dkulib/dku_io_utils
 # Library version: 0.1.0
-# Last update: 2021-06
+# Last update: 2021-07
 # Author: Dataiku (Alex Combessie)
 #########################################################
 
