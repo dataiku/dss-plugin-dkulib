@@ -43,8 +43,8 @@ class BatchError(ValueError):
 def _parse_batch_response_default(
     batch: List[Dict], response: List[Any], output_column_names: NamedTuple
 ) -> List[Dict]:
-    """Adds the response column to the row dictionary at batch[0], while keeping the
-    existing dict entries. Should only be used when batch_size=1.
+    """Adds responses to each row dictionary in the batch, assuming the batch response is a list of responses
+    in the same order as the batch, while keeping the existing row dictionary entries in the batch.
 
     Args:
         batch: Single input row from the dataframe as a dict in a list of length 1
@@ -148,7 +148,6 @@ class DataFrameParallelizer:
         self.parallel_workers = parallel_workers
         self.batch_support = batch_support
         if not batch_support:
-            # Overwrite batch_size if no batch_support
             batch_size = 1
         self.batch_size = batch_size
         self.batch_response_parser = batch_response_parser
@@ -285,8 +284,6 @@ class DataFrameParallelizer:
         df_row_generator = (
             index_series_pair[1].to_dict() for index_series_pair in df.iterrows()
         )
-        # We then chunk the generator into lists of rows of len batch_size
-        df_row_batch_generator = chunked(df_row_generator, self.batch_size)
         len_generator = math.ceil(len(df.index) / self.batch_size)
         logging.info(
             f"Applying function {self.function.__name__} in parallel to {len(df.index)} row(s)"
@@ -301,7 +298,7 @@ class DataFrameParallelizer:
             pool_kwargs.pop(kwarg, None)
         (futures, results) = ([], [])
         with ThreadPoolExecutor(max_workers=self.parallel_workers) as pool:
-            for batch in df_row_batch_generator:
+            for batch in chunked(df_row_generator, self.batch_size):
                 futures.append(
                     pool.submit(
                         fn=self._apply_function_with_error_logging,
