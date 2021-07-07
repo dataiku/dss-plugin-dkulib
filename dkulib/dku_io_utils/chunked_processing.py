@@ -29,21 +29,33 @@ def count_records(dataset: dataiku.Dataset) -> int:
     if partitions is None or len(partitions) == 0:
         project.get_dataset(dataset.short_name).compute_metrics(metric_ids=[metric_id])
         metric = dataset.get_last_metric_values()
-        record_count = dataiku.ComputedMetrics.get_value_from_data(metric.get_global_data(metric_id=metric_id))
-        logging.info(f"Dataset {dataset.name} contains {record_count:d} records and is not partitioned")
+        record_count = dataiku.ComputedMetrics.get_value_from_data(
+            metric.get_global_data(metric_id=metric_id)
+        )
+        logging.info(
+            f"Dataset {dataset.name} contains {record_count:d} records and is not partitioned"
+        )
     else:
         for partition in partitions:
-            project.get_dataset(dataset.short_name).compute_metrics(partition=partition, metric_ids=[metric_id])
+            project.get_dataset(dataset.short_name).compute_metrics(
+                partition=partition, metric_ids=[metric_id]
+            )
             metric = dataset.get_last_metric_values()
             record_count += dataiku.ComputedMetrics.get_value_from_data(
                 metric.get_partition_data(partition=partition, metric_id=metric_id)
             )
-        logging.info(f"Dataset {dataset.name} contains {record_count:d} records in partition(s) {partitions}")
+        logging.info(
+            f"Dataset {dataset.name} contains {record_count:d} records in partition(s) {partitions}"
+        )
     return record_count
 
 
 def process_dataset_chunks(
-    input_dataset: dataiku.Dataset, output_dataset: dataiku.Dataset, func: Callable, chunksize: float = 1000, **kwargs
+    input_dataset: dataiku.Dataset,
+    output_dataset: dataiku.Dataset,
+    func: Callable,
+    chunksize: float = 1000,
+    **kwargs,
 ) -> None:
     """Reads a dataset by chunks, process each dataframe chunk with a function and write back to another dataset.
 
@@ -66,17 +78,28 @@ def process_dataset_chunks(
     input_count_records = count_records(input_dataset)
     if input_count_records == 0:
         raise ValueError("Input dataset has no records")
-    logging.info(f"Processing dataset {input_dataset.name} of {input_count_records} rows by chunks of {chunksize}...")
+    logging.info(
+        f"Processing dataset {input_dataset.name} of {input_count_records} rows "
+        + f"by chunks of {chunksize}..."
+    )
     start = perf_counter()
-    # First, initialize output schema if not present. Required to show the real error if `iter_dataframes` fails.
+    # First, initialize output schema if empty. Required to show the real error if `iter_dataframes` fails.
     if not output_dataset.read_schema(raise_if_empty=False):
         df = input_dataset.get_dataframe(limit=5, infer_with_pandas=False)
         output_df = func(df=df, **kwargs)
         output_dataset.write_schema_from_dataframe(output_df)
     with output_dataset.get_writer() as writer:
-        df_iterator = input_dataset.iter_dataframes(chunksize=chunksize, infer_with_pandas=False)
+        df_iterator = input_dataset.iter_dataframes(
+            chunksize=chunksize, infer_with_pandas=False
+        )
         len_iterator = math.ceil(input_count_records / chunksize)
-        for i, df in tqdm_auto(enumerate(df_iterator), total=len_iterator, unit="chunk", miniters=1, mininterval=1.0):
+        for i, df in tqdm_auto(
+            enumerate(df_iterator),
+            total=len_iterator,
+            unit="chunk",
+            miniters=1,
+            mininterval=1.0,
+        ):
             output_df = func(df=df, **kwargs)
             if i == 0:
                 output_dataset.write_schema_from_dataframe(
@@ -84,6 +107,6 @@ def process_dataset_chunks(
                 )
             writer.write_dataframe(output_df)
     logging.info(
-        f"Processing dataset {input_dataset.name} of {input_count_records} rows: " +
-        f"Done in {perf_counter() - start:.2f} seconds."
+        f"Processing dataset {input_dataset.name} of {input_count_records} rows: "
+        + f"Done in {perf_counter() - start:.2f} seconds."
     )
