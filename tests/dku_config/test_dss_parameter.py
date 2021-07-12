@@ -168,11 +168,11 @@ class TestDSSParameter:
             _ = DSSParameter(
                 name='test_1',
                 value=7,
+                label='Display Name',
                 checks=[{
                     "type": "is_type",
                     "op": str
-                }],
-                label='Display Name'
+                }]
             )
         error_message = str(err.value)
         assert 'Display Name' in error_message
