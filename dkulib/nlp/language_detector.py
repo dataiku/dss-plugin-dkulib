@@ -16,7 +16,7 @@ from .language_dict import (
     LANGUAGE_REMAPPING_PYCLD3_LANGID,
 )
 
-from dkulib.io_utils.plugin_io_utils import generate_unique, truncate_text_list
+from ..io_utils.plugin_io_utils import generate_unique, truncate_text_list
 
 
 class LanguageDetector:
