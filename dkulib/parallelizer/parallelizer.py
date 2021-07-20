@@ -26,7 +26,7 @@ from more_itertools import flatten
 import pandas as pd
 from tqdm.auto import tqdm as tqdm_auto
 
-from dkulib.io_utils.plugin_io_utils import generate_unique
+from ..io_utils.plugin_io_utils import generate_unique
 
 
 class ErrorHandling(Enum):
