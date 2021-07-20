@@ -16,7 +16,7 @@ from spacy.vocab import Vocab
 from symspellpy.symspellpy import SymSpell, Verbosity
 from fastcore.utils import store_attr
 
-from dkulib.io_utils.plugin_io_utils import unique_list, generate_unique, truncate_text_list, clean_empty_list, time_logging
+from ..io_utils.plugin_io_utils import unique_list, generate_unique, truncate_text_list, clean_empty_list, time_logging
 from .spacy_tokenizer import MultilingualTokenizer
 from .language_dict import SUPPORTED_LANGUAGES_SYMSPELL
 

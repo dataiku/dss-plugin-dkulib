@@ -15,7 +15,7 @@ from spacy.tokens import Doc, Token
 from fastcore.utils import store_attr
 
 from .spacy_tokenizer import MultilingualTokenizer
-from dkulib.io_utils.plugin_io_utils import generate_unique
+from ..io_utils.plugin_io_utils import generate_unique
 
 
 WHITESPACE_REGEX = re.compile(r" +")

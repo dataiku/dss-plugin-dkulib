@@ -19,7 +19,7 @@ from emoji import UNICODE_EMOJI
 from fastcore.utils import store_attr
 
 from .language_dict import SUPPORTED_LANGUAGES_SPACY, SPACY_LANGUAGE_MODELS
-from dkulib.io_utils.plugin_io_utils import generate_unique, truncate_text_list
+from ..io_utils.plugin_io_utils import generate_unique, truncate_text_list
 
 
 # Setting custom spaCy token extensions to allow for easier filtering in downstream tasks
