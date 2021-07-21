@@ -2,7 +2,8 @@ from dkulib.dku_config.custom_check import CustomCheck
 from dkulib.dku_config.dku_config import DkuConfig
 from dkulib.dku_config.dss_parameter import DSSParameter
 
-from dkulib.dku_io_utils import count_records, process_dataset_chunks
+from dkulib.dku_io_utils import count_records
+from dkulib.dku_io_utils import process_dataset_chunks
 from dkulib.dku_io_utils import set_column_descriptions
 
 from dkulib.io_utils import clean_empty_list
