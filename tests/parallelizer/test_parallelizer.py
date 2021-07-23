@@ -12,7 +12,7 @@ from urllib.error import URLError
 import pytest
 import pandas as pd
 
-from parallelizer.parallelizer import DataFrameParallelizer, ErrorHandling
+from api_utils.parallelizer import DataFrameParallelizer, ErrorHandling
 
 
 # ==============================================================================

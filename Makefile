@@ -1,4 +1,4 @@
-modules = dku_config nlp parallelizer # Add here new libs separated by a whitespace if needed
+modules = dku_config nlp api_utils # Add here new libs separated by a whitespace if needed
 
 nlp-setup:
 	export DICTIONARY_FOLDER_PATH="$(PWD)/nlp/resource/dictionaries"; \
