@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from dkulib.dku_config.custom_check import CustomCheck, CustomCheckError
+from dku_config.custom_check import CustomCheck, CustomCheckError
 
 
 class TestCustomCheck:
