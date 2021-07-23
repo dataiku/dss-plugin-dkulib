@@ -6,8 +6,8 @@
 import os
 import pandas as pd
 
-from dkulib.nlp.spacy_tokenizer import MultilingualTokenizer
-from dkulib.nlp.symspell_checker import SpellChecker
+from nlp.spacy_tokenizer import MultilingualTokenizer
+from nlp.symspell_checker import SpellChecker
 
 dictionary_folder_path = os.getenv("DICTIONARY_FOLDER_PATH", "path_is_no_good")
 stopwords_folder_path = os.getenv("STOPWORDS_FOLDER_PATH", "path_is_no_good")

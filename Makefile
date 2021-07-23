@@ -1,8 +1,8 @@
 modules = dku_config nlp parallelizer # Add here new libs separated by a whitespace if needed
 
 nlp-setup:
-	export DICTIONARY_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/dictionaries"; \
-	export STOPWORDS_FOLDER_PATH="$(PWD)/dkulib/nlp/resource/stopwords"; \
+	export DICTIONARY_FOLDER_PATH="$(PWD)/nlp/resource/dictionaries"; \
+	export STOPWORDS_FOLDER_PATH="$(PWD)/nlp/resource/stopwords"; \
 
 test-one:
 	@echo "[START] Running unit tests on ${module}..."
@@ -11,7 +11,7 @@ test-one:
 		python3 -m venv env/; \
 		source env/bin/activate; \
 		pip3 install --upgrade pip; \
-		pip3 install -r dkulib/${module}/requirements.txt -r tests/requirements.txt; \
+		pip3 install -r ${module}/requirements.txt -r tests/requirements.txt; \
 		export PYTHONPATH="$(PYTHONPATH):$(PWD)"; \
 		$(MAKE) ${module}-setup; \
 		pytest tests/${module} --alluredir=tests/allure_report; \
