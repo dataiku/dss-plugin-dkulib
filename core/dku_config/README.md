@@ -23,7 +23,7 @@ You want to validate in backend that the parameters have been filled properly an
 message. You can then build a DkuConfig object.
 
 ```python
-from core.dku_config.dku_config import DkuConfig
+from dkulib.core.dku_config.dku_config import DkuConfig
 import dataiku
 from dataiku.customrecipe import get_recipe_config
 
