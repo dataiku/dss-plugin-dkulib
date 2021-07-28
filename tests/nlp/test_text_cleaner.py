@@ -6,8 +6,8 @@
 import os
 import pandas as pd
 
-from dkulib.nlp.spacy_tokenizer import MultilingualTokenizer
-from dkulib.nlp.text_cleaner import UnicodeNormalization, TextCleaner
+from core.nlp.spacy_tokenizer import MultilingualTokenizer
+from core.nlp.text_cleaner import UnicodeNormalization, TextCleaner
 
 stopwords_folder_path = os.getenv("STOPWORDS_FOLDER_PATH", "path_is_no_good")
 

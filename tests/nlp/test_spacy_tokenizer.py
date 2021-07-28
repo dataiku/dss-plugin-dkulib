@@ -7,7 +7,7 @@ import os
 
 import pandas as pd
 
-from dkulib.nlp.spacy_tokenizer import MultilingualTokenizer
+from core.nlp.spacy_tokenizer import MultilingualTokenizer
 
 stopwords_folder_path = os.getenv("STOPWORDS_FOLDER_PATH", "path_is_no_good")
 

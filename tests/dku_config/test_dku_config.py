@@ -1,6 +1,6 @@
 import pytest
-from dkulib.dku_config.dku_config import DkuConfig
-from dkulib.dku_config.dss_parameter import DSSParameterError
+from core.dku_config.dku_config import DkuConfig
+from core.dku_config.dss_parameter import DSSParameterError
 
 
 class TestDkuConfig:

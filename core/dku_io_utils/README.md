@@ -11,8 +11,8 @@ Here is an example of usage:
 ```
 import dataiku
 
-from dkulib.dku_io_utils.chunked_processing import process_dataset_chunks
-from dkulib.dku_io_utils.column_descriptions import set_column_descriptions
+from dkulib.core.dku_io_utils.chunked_processing import process_dataset_chunks
+from dkulib.core.dku_io_utils.column_descriptions import set_column_descriptions
 
 process_dataset_chunks(
     input_dataset=dataiku.Dataset("input"),
