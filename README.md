@@ -1,6 +1,16 @@
 # Dataiku DSS Plugin Library
 
-This repo contains reusable code to help develop Dataiku DSS plugins.
+This repo contains reusable code to help develop Dataiku DSS plugins. 
+
+## Usage
+
+When used in a Dataiku DSS plugin, add this repository as a git submodule in python-lib by executing the following command from within python-lib:
+
+`git submodule add https://github.com/dataiku/dss-plugin-dkulib dkulib/`
+
+You can then import modules in the plugins recipe.py file via e.g.:
+
+`from dkulib.core.parallelizer import DataFrameParallelizer`
 
 ## Included libs
 
