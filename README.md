@@ -4,9 +4,8 @@ This repo contains reusable code to help develop Dataiku DSS plugins.
 
 ## Usage
 
-When used in a Dataiku DSS plugin, add this repository as a git submodule in python-lib by executing the following command from within python-lib:
-
-`git submodule add https://github.com/dataiku/dss-plugin-dkulib dkulib/`
+When used in a Dataiku DSS plugin, copy files from this repository to python-lib/dkulib. 
+Don't forget to add a comment at the start of each file with the dku-lib commit id you've used. 
 
 You can then import modules in the plugins recipe.py file via e.g.:
 
