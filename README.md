@@ -4,12 +4,13 @@ This repo contains reusable code to help develop Dataiku DSS plugins.
 
 ## Usage
 
-When used in a Dataiku DSS plugin, copy files from this repository to python-lib/dkulib. 
-Don't forget to add a comment at the start of each file with the dku-lib commit id you've used. 
+Never copy individual files from this repo to your code, only copy the containing folders (nlp, parallelization, ...) as they contains the versions and instructions. 
+Copy these dir under your python-lib
+
 
 You can then import modules in the plugins recipe.py file via e.g.:
 
-`from dkulib.core.parallelizer import DataFrameParallelizer`
+`from parallelizer import DataFrameParallelizer`
 
 ## Included libs
 
