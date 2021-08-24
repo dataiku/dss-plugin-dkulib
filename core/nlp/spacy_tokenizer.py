@@ -269,6 +269,7 @@ class MultilingualTokenizer:
                 nlp = spacy.load(SPACY_LANGUAGE_MODELS[language])
             # Since v3, spaCy uses char tokenization by default for Chinese, not jieba anymore
             # See https://github.com/explosion/spaCy/blob/e1f88de729f113f068958c824cf01026363bb110/spacy/lang/zh/__init__.py
+            # If a model is selected, jieba is not needed - see https://github.com/explosion/spaCy/discussions/8577#discussioncomment-955726
             elif language == "zh":
                 nlp = Chinese.from_config({"nlp": {"tokenizer": {"segmenter": "jieba"}}})
             else:
