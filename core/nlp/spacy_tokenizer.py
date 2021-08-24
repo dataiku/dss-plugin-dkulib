@@ -122,7 +122,7 @@ class MultilingualTokenizer:
 
     DEFAULT_BATCH_SIZE = 1000
     MAX_NUM_CHARACTERS = 10 ** 7
-    DEFAULT_NUM_PROCESS = 1
+    DEFAULT_NUM_PROCESS = 2
     DEFAULT_FILTER_TOKEN_ATTRIBUTES = {
         "is_space": "Whitespace",
         "is_punct": "Punctuation",
