@@ -15,7 +15,10 @@ stopwords_folder_path = os.getenv("STOPWORDS_FOLDER_PATH", "path_is_no_good")
 def test_clean_df_english():
     input_df = pd.DataFrame({"input_text": ["Hi, I have two apples costing 3$ 😂    \n and unicode has #snowpersons ☃"]})
     token_filters = {"is_punct", "is_stop", "like_num", "is_symbol", "is_currency", "is_emoji"}
-    text_cleaner = TextCleaner(tokenizer=MultilingualTokenizer(), token_filters=token_filters, lemmatization=True)
+    tokenizer = MultilingualTokenizer()
+    tokenizer.spacy_nlp_dict["en"] = tokenizer._create_spacy_tokenizer("en")
+    tokenizer._activate_components_to_lemmatize("en")
+    text_cleaner = TextCleaner(tokenizer=tokenizer, token_filters=token_filters, lemmatization=True)
     output_df = text_cleaner.clean_df(df=input_df, text_column="input_text", language="en")
     cleaned_text_column = list(text_cleaner.output_column_descriptions.keys())[0]
     cleaned_text = output_df[cleaned_text_column][0]
@@ -35,8 +38,12 @@ def test_clean_df_multilingual():
         }
     )
     token_filters = {"is_stop", "is_measure", "is_datetime", "like_url", "like_email", "is_username", "is_hashtag"}
+    tokenizer = MultilingualTokenizer(stopwords_folder_path=stopwords_folder_path)
+    for lang in input_df.language.values.tolist():
+        tokenizer.spacy_nlp_dict[lang] = tokenizer._create_spacy_tokenizer(lang)
+        tokenizer._activate_components_to_lemmatize(lang)
     text_cleaner = TextCleaner(
-        tokenizer=MultilingualTokenizer(stopwords_folder_path=stopwords_folder_path),
+        tokenizer=tokenizer,
         token_filters=token_filters,
         lemmatization=True,
         lowercase=False,
