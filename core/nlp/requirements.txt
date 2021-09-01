@@ -11,3 +11,11 @@ regex==2020.11.13
 spacy[lookups,ja,th]==3.0.7
 symspellpy==6.7.0
 tqdm==4.50.2
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0.tar.gz#egg=en_core_web_sm
+https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.0.0/es_core_news_sm-3.0.0.tar.gz#egg=es_core_news_sm
+https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.0.0/zh_core_web_sm-3.0.0.tar.gz#egg=zh_core_web_sm
+https://github.com/explosion/spacy-models/releases/download/nb_core_news_sm-3.0.0/nb_core_news_sm-3.0.0.tar.gz#egg=nb_core_news_sm
+https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.0.0/fr_core_news_sm-3.0.0.tar.gz#egg=fr_core_news_sm
+https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.0.0/de_core_news_sm-3.0.0.tar.gz#egg=de_core_news_sm
+https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.0.0/ru_core_news_sm-3.0.0.tar.gz#egg=ru_core_news_sm
+https://github.com/explosion/spacy-models/releases/download/pl_core_news_sm-3.0.0/pl_core_news_sm-3.0.0.tar.gz#egg=pl_core_news_sm
