@@ -15,7 +15,7 @@ The lib provides the following tools for NLP:
 
 ## Examples
 
-Clone & cd into the repository and install the `core/nlp/requirements.txt` packages.
+Here are examples of using the nlp submodules.
 
 Each module acts upon a pandas DataFrame, adding a new column with the module's output.
 For additional examples feel free to check `tests/nlp/`.
