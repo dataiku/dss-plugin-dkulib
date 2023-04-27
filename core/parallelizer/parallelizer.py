@@ -301,7 +301,7 @@ class DataFrameParallelizer:
             for batch in chunked(df_row_generator, self.batch_size):
                 futures.append(
                     pool.submit(
-                        fn=self._apply_function_with_error_logging,
+                        self._apply_function_with_error_logging,
                         batch=batch,
                         **pool_kwargs,
                     )
